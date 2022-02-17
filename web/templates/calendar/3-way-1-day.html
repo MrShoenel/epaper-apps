@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>3-way Calendar View</title>
+    <link rel="shortcut icon" href="data:" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/3-way-1-day.less" />
+    <script type="text/javascript" src="/web/assets/less@4.js"></script>
+</head>
+<!--
+    This template shows 3 elements:
+    - A tasklist that shows the tasks of the days, as well as the title of
+      the events of today (that are still in the future)
+    - A four-week calendar with weekdays and dates. This calendar is supposed
+      to draw dates that have events with a different background.
+    - Events of the day, Thunderbird-style (overlapping events are shown
+      next to each other)
+    
+    For that, we need two sources of data:
+    - Events of the day for the tasklist and the events of the day
+    - Days that have one or more events in the next four weeks
+-->
+<body>
+    <script type="text/javascript">
+        let time_now = {{ time_now|tojson|safe }};
+        let day_names = {{ day_names|tojson|safe }};
+        let events_of_the_day = {{ events_of_the_day|tojson|safe }};
+        let weekday_events = {{ weekday_events|tojson|safe }};
+        const view_config = {{ view_config|tojson|safe }};
+    </script>
+    <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+
+    <div style="width: 800px; height: 480px; border: 0px solid #000;">
+        <div style="display: grid; grid-template-columns: 520px 280px; grid-template-rows: 242px 238px; gap: 0px; width: 100%; height: 100%; overflow: hidden;">
+            <div id="events-today" style="grid-row: 1 / 3; grid-column: 1;"></div>
+            <div id="task-list" style="grid-row: 1; grid-column: 2;"></div>
+            <div id="calendar" style="grid-row: 2; grid-column: 2;">
+                <table>
+                    <thead>
+                        <tr>
+                            <td>week</td>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+    $(document).ready(async() => {
+        // 'inflate' too short events/tasks in case they don't have
+        // a duration or if it's too short. This is done for visual
+        // reasons. Set to 'null' if not desired.
+        const minDuration = 3600;
+        
+        const timeout = ms => new Promise((resolve, reject) => {
+            setTimeout(resolve, ms)
+        });
+        await timeout(250);
+
+        const pad10 = s => {
+            if (`${s}`.length == 1) {
+                s = `0${s}`;
+            }
+            return s;
+        };
+
+        events_of_the_day = events_of_the_day.map(e => {
+            if (minDuration !== null && e.duration === null) {
+                e.duration = minDuration;
+            }
+            return e;
+        });
+
+        indefinite_tasks = events_of_the_day.filter(e => {
+            e.is_indef_task = e.is_task && e.start === null && e.end === null;
+            return e.is_indef_task;
+        });
+
+        overdue_undone_tasks = events_of_the_day.filter(e => {
+            const p = e.start === null ? e.end : e.start;
+            e.is_overdue_undone_task = e.is_task && p !== null && p.ts < time_now.ts;
+            return e.is_overdue_undone_task;
+        });
+
+        events_of_the_day = events_of_the_day.filter(e => {
+            // Remove events that bleed into today, i.e., include only events
+            // that start today!
+            // Also, exclude indefinite tasks here.
+            if (e.is_indef_task || e.is_overdue_undone_task) {
+                return false;
+            }
+            if (e.start !== null) {
+                return e.start.day === time_now.day;
+            } else {
+                // No start: only allow tasks with end today!
+                return e.is_task && e.end !== null && e.end.day === time_now.day;
+            }
+            return false;
+        }).map(e => {
+            if (e.start === null) {
+                e.start = e.end;
+            } else if (e.end === null) {
+                e.end = e.start;
+            }
+
+            e.start.abs = e.start.second + e.start.minute * 60 + e.start.hour * 3600;
+            e.end.abs = e.end.second + e.end.minute * 60 + e.end.hour * 3600;
+            
+            return e;
+        }).sort((a, b) => a.start.abs - b.start.abs);
+
+        const $today = $('div#events-today');
+
+
+        const renderTaskList = () => {
+            overdue_undone_tasks.concat(indefinite_tasks).concat(events_of_the_day).forEach(e => {
+                const $div = $('<div/>').addClass('event').css({
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                });
+                
+                const $iconSpan = $('<span/>').addClass('icon');
+                if (e.is_task) {
+                    $iconSpan.addClass('task');
+                } else {
+                    $iconSpan.addClass('event');
+                }
+                $div.append($iconSpan);
+
+                let $span = $('<span/>').addClass('start-time').text(
+                    e.is_indef_task ? 'asap' :
+                        (e.is_overdue_undone_task ? 'overdue' : `${pad10(e.start.hour)}:${pad10(e.start.minute)}`)
+                );
+                if (e.is_indef_task || e.is_overdue_undone_task) {
+                    $span.addClass('urgent');
+                }
+
+                $div.append($span);
+
+                $div.append($('<span/>').text((view_config.tasklist.show_cal_name ? `[${e.cal_name}] ` : '') + e.title));
+
+                $('div#task-list').append($div);
+            });
+        };
+
+        renderTaskList();
+        
+
+        const renderMonthlyCalendar = () => {
+            let $tr = $('div#calendar thead tr');
+            day_names.forEach(n => $('<td/>').text(n.substring(0, 1)).appendTo($tr));
+
+            let $tb = $('div#calendar tbody')
+            , thisMonth = weekday_events.find(wd => wd.is_today).month
+            , thisWeek = weekday_events.find(wd => wd.is_today).week;
+
+            const nrow = weekday_events.length / 7;
+
+            for (let i = 0; i < nrow; i++) {
+                let $tr = $('<tr/>');
+                let temp = weekday_events[i * 7];
+                $tr.append($('<td/>').text(temp.week));
+                if (temp.week === thisWeek) {
+                    $tr.addClass('this-week');
+                }
+
+                for (let j = 0; j < 7; j++) {
+
+                    let wd = weekday_events[i * 7 + j];
+                    let $td = $('<td/>').text(wd.day);
+                    if (wd.is_today) {
+                        $td.addClass('today');
+                    }
+                    if (wd.before_today) {
+                        $td.addClass('before-today');
+                    }
+                    if (wd.month !== thisMonth) {
+                        $td.addClass('other-month');
+                    }
+                    if (wd.events.length > 0) {
+                        // Let's also check if these are events that start that day!
+                        if (wd.events.filter(evt => (evt.start !== null && evt.start.day === wd.day) || (evt.is_task && evt.end !== null && evt.end.day === wd.day)).length > 0) {
+                            $td.addClass('has-events');
+                        }
+                    }
+                    if (wd.weekday === 7) {
+                        $td.addClass('red');
+                    }
+                    $td.appendTo($tr);
+                }
+
+                $tr.appendTo($tb);
+            }
+        };
+
+        renderMonthlyCalendar();
+        
+        const renderEventsOfToday = () => {
+            // We'll show events next to each other, with some space in between.
+            // Also, there will be some space on the right to display the time.
+            const firstEvent = events_of_the_day.length > 0 ? events_of_the_day[0] : null;
+            let earliestHour = firstEvent === null ? 0 : firstEvent.start.hour;
+            const lastEvent = events_of_the_day.length > 0 ? events_of_the_day[events_of_the_day.length - 1] : null;
+            let latestHour = lastEvent === null ? 23 : lastEvent.end.hour;
+            if (firstEvent.start.day < time_now.day) {
+                earliestHour = 0;
+            }
+            if (lastEvent.end.day > time_now.day) {
+                latestHour = 23;
+            }
+
+            // Now create some space:
+            if (earliestHour > 0) {
+                earliestHour -= 1;
+            }
+            if (latestHour < 23) {
+                latestHour += 1;
+            }
+            const range = function*(start, stop) {
+                while (start <= stop) {
+                    yield start;
+                    start++
+                }
+            };
+
+            // These will be the divs in the background with the hourly lines.
+            // They'll share the available height.
+            const divHours = [...range(earliestHour, latestHour)]
+            , divHoursHeight = $today.height() / divHours.length;
+            for (const hour of divHours) {
+                $today.append($('<div/>').addClass('today-hours').css({
+                    height: `${divHoursHeight-1}px`
+                }).attr('id', `hour-${hour}`).append($('<span/>').text(pad10(hour))));
+            }
+
+            // Render a red line for the current time:
+            if (time_now.hour >= divHours[0] && time_now.hour <= divHours[divHours.length-1]) {
+                $today.append($('<div/>').css({
+                    position: 'absolute',
+                    left: '24px',
+                    top: `${$(`div#hour-${time_now.hour}`).offset().top + time_now.minute / 60 * divHoursHeight - 1}px`,
+                    width: `${$today.width()-24}px`,
+                    height: '3px',
+                    backgroundColor: 'red'
+                }));
+            }
+
+            // The available horizontal space is:
+            // total - 16px (left span) - 2px (right margin)
+            // - (n-1)*2px (margin between items)
+            let calWidth = $today.width() - 24; // - (maxPara - 1) * 2;
+            // Available with per calendar item
+            // let perWidth = (calWidth - (maxPara - 1) * 2) / maxPara;
+            // Now, we'll keep an array of length maxPara, and at each index
+            // we'll store a list of events (the index corresponds to the column).
+            // Each event will be placed onto the calendar, into the first free
+            // column. A column is also considered free if there's enough vertical
+            // space.
+            let evtCols = [...Array(100)].map(_ => []);
+            let evts = events_of_the_day.slice(0);
+            while (evts.length > 0) {
+                let e = evts.shift();
+                let colIdx = evtCols.findIndex(col => {
+                    if (col.length === 0) {
+                        return true;
+                    }
+                    // col is not empty, but maybe there's space:
+                    const last = col[col.length - 1];
+                    if (last.end.abs < e.start.abs) {
+                        return true;
+                    }
+                    return false;
+                });
+
+                // y:
+                const absY = $(`div#hour-${e.start.hour}`).offset().top +
+                    e.start.minute / 60 * divHoursHeight;
+                // .. and the height:
+                const absH = e.duration / 3600 * divHoursHeight;
+
+
+                // Append event to column,
+                evtCols[colIdx].push(e);
+                // then render:
+                let $divEvt = $('<div/>').addClass('event').css({
+                    position: 'absolute',
+                    top: `${absY}px`,
+                    height: `${absH}px`
+                    // backgroundColor: '#'+(Math.random().toString(16)+'00000').slice(2,8)
+                }).data('col-idx', colIdx).append(
+                    $('<div/>').addClass('time').text(
+                        `${pad10(e.start.hour)}:${pad10(e.start.minute)}-` +
+                        `${pad10(e.end.hour)}:${pad10(e.end.minute)}`
+                    )
+                ).append(
+                    $('<div/>').addClass('title').text(`[${e.cal_name}] ${e.title}`)
+                ).append(
+                    $('<div/>').addClass('desc').text(e.desc)
+                );
+                $today.append($divEvt);
+            }
+
+            // Let's check how many columns we needed:
+            evtCols = evtCols.filter(col => col.length > 0);
+            $today.find('div.event').each((idx, elem) => {
+                const $e = $(elem)
+                , perWidth = calWidth / evtCols.length - 2 - 6 - 2
+                , colIdx = $e.data('col-idx');
+                $e.css({
+                    width: `${perWidth}px`,
+                    left: `${24 + colIdx * 2 + colIdx * 6 + colIdx * perWidth + colIdx * 2}px`
+                });
+            });
+        };
+        
+        const renderNoEventsToday = () => {
+            $today.append(
+                $('<div/>').text('Nothing planned today!').css({
+                    position: 'absolute',
+                    top: '100px',
+                    left: `${$today.width() / 2}px`,
+                    width: '300px',
+                    marginLeft: '-150px',
+                    fontSize: '64px',
+                    color: '#444',
+                    textAlign: 'center'
+                }).append(
+                    $('<p/>').text('Enjoy the day off :)').css({
+                        fontSize: '18px',
+                        fontWeight: '900',
+                        backgroundColor: '#f00',
+                        color: '#fff',
+                        width: '160px',
+                        padding: '.5ex 1ex',
+                        marginLeft: 'calc((140px - 2ex) / 2)'
+                    })
+                )
+            );
+        };
+
+        const renderLastUpdated = () => {
+            $('<div/>').css({
+                position: 'absolute',
+                border: '1px solid #999',
+                borderWidth: '0 1px 1px',
+                width: '110px',
+                left: `${$today.width() / 2}px`,
+                top: '0px',
+                marginLeft: '-56px',
+                backgroundColor: '#eee',
+                textAlign: 'center',
+                fontFamily: 'WenQuanYi Micro Hei',
+                letterSpacing: '-1px',
+                lineHeight: '14px'
+            }).append(
+                $('<span/>').text('Updated:').css({
+                    marginRight: '.5ex'
+                })
+            ).append($('<span/>').text(`${pad10(time_now.hour)}:${pad10(time_now.minute)}:${pad10(time_now.second)}`).css({
+                fontFamily: 'WenQuanYi Micro Hei Mono',
+                fontWeight: 900,
+                fontSize: '12px'
+            })).appendTo($today);
+        };
+
+        if (events_of_the_day.length > 0) {
+            renderEventsOfToday();
+        } else {
+            renderNoEventsToday();
+        }
+
+        renderLastUpdated();
+
+        
+
+        
+    });
+    </script>
+</body>
+</html>
