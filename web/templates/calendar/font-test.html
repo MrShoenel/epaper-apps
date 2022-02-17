@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Font test</title>
+    <link rel="shortcut icon" href="data:" />
+</head>
+<!--
+    This template is supposed to be used to render some fonts.
+    This is necessary because different browsers render differently,
+    and the result on the e-paper differs, too.
+-->
+<body>
+    <svg class="offscreen" width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="crispify">
+                <feComponentTransfer>
+                    <feFuncA type="discrete" tableValues="0 1"/>
+                </feComponentTransfer>
+            </filter>
+        </defs>
+    </svg>
+
+
+    <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+
+    <div id="main" style="width: 800px; height: 480px; border: 0px solid #000;">
+        <script>
+        (() => {
+            const ff = [
+                //`'Times New Roman', Times, serif`,
+                //`Georgia, 'Times New Roman', Times, serif`,
+                //`'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif`,
+                //`Consolas, monaco, monospace`,
+                //`Rockwell, Courier Bold, Courier, Georgia, Times, Times New Roman, serif`
+                `WenQuanYi Micro Hei`];
+            const ff_alt = ['Times 123$-:', 'Geogi 123$-:', 'Gill Sa 123$-:', 'Consol 123$-:', 'Rockwel 123$-:']
+            const px = [12,14,15,16,18,20,24];
+            const fw = [100, 600, 900];
+
+            for (const i in ff) {
+                f = ff[i]
+                let $p = $('<p/>');
+
+                for (const p of px) {
+                    for (const w of fw) {
+                        $p.append($('<span/>').css({
+                            //marginTop: '5px',
+                            //marginBottom: '5px',
+                            fontFamily: f,
+                            fontSize: `${p}px`,
+                            fontWeight: w
+                        }).text(`quick brown fox jumps 1234567890 !"§$%&/()=?_;" (in ${p} with ${w}).`)).append($('<br/>'));
+                    }
+                }
+                $p.appendTo($('div#main'))
+            }
+        })();
+        </script>
+    </div>
+</body>
+</html>
