@@ -20,6 +20,11 @@ class ScreenshotMaker:
         # if os.name == 'nt':
         #     chrome_options.binary_location = 'C:\\Program Files (Portable)\\chromium\\chrome.exe'
         # self.driver = webdriver.Chrome(options=chrome_options)
+    
+    def __del__(self):
+        self.driver.stop_client()
+        self.driver.close()
+        self.driver.quit()
 
 
     def setViewportSize(self, width, height):
