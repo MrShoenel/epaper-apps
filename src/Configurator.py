@@ -6,7 +6,7 @@ from json import dumps, load
 from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
 from src.Api import Api
-from flask import render_template
+from flask import render_template, request
 
 
 
@@ -32,15 +32,13 @@ class Configurator:
         with open(file=path, mode='r', encoding='utf-8') as fp:
             return Configurator(config=load(fp=fp))
     
-    def startApi(self, non_blocking: bool=False):
+    def startApi(self, blocking: bool=False):
         c = self.config['api']
-        run = lambda: self.api.run(host=c['host'], port=c['port'])
-
-        if non_blocking:
-            threading.Thread(target=run).start()
-        else:
-            run()
-        
+        self.api.run(host=c['host'], port=c['port'], blocking=blocking)
+        return self
+    
+    def stopApi(self):
+        self.api.stop()
         return self
     
     def setupCalendar(self):
