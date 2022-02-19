@@ -53,11 +53,25 @@
         // a duration or if it's too short. This is done for visual
         // reasons. Set to 'null' if not desired.
         const minDuration = 3600;
-        
+
         const timeout = ms => new Promise((resolve, reject) => {
             setTimeout(resolve, ms)
         });
-        await timeout(250);
+
+        const waitForElemWidth = $e => new Promise(async resolve => {
+            while (true) {
+                if ($e.innerWidth() === 0) {
+                    await timeout(20)
+                } else {
+                    break
+                }
+            }
+            resolve()
+        });
+        
+        const $today = $('div#events-today');
+        
+        await waitForElemWidth($today);
 
         const pad10 = s => {
             if (`${s}`.length == 1) {
@@ -110,8 +124,6 @@
             
             return e;
         }).sort((a, b) => a.start.abs - b.start.abs);
-
-        const $today = $('div#events-today');
 
 
         const renderTaskList = () => {
