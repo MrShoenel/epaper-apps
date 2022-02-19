@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>3-way Calendar View</title>
+    <link rel="shortcut icon" href="data:" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/default.less" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/multi-week.less" />
+    <script type="text/javascript" src="/web/assets/less@4.js"></script>
+</head>
+<!--
+    This template shows one large calendar, typically from months' begin + some weeks.
+    It's basically a large version of the calendar in 3-way-1-day.
+    
+    For that, we need two sources of data:
+    - Events of the day for the tasklist and the events of the day
+    - Days that have one or more events in the next four weeks
+-->
+<body>
+    <script type="text/javascript">
+        let time_now = {{ time_now|tojson|safe }};
+        let day_names = {{ day_names|tojson|safe }};
+        let weekday_events = {{ weekday_events|tojson|safe }};
+        const view_config = {{ view_config|tojson|safe }};
+    </script>
+    <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+
+    <div id="calendar" style="width: 800px; height: 480px;">
+        <table>
+            <thead>
+                <tr>
+                    <td>week</td>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <script type="text/javascript">
+    $(document).ready(async() => {
+        // 'inflate' too short events/tasks in case they don't have
+        // a duration or if it's too short. This is done for visual
+        // reasons. Set to 'null' if not desired.
+        const minDuration = 3600;
+        
+        const timeout = ms => new Promise((resolve, reject) => {
+            setTimeout(resolve, ms)
+        });
+        await timeout(250);
+
+        const pad10 = s => {
+            if (`${s}`.length == 1) {
+                s = `0${s}`;
+            }
+            return s;
+        };
+
+        const renderTaskList = () => {
+            overdue_undone_tasks.concat(indefinite_tasks).concat(events_of_the_day).forEach(e => {
+                const $div = $('<div/>').addClass('event').css({
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                });
+                
+                const $iconSpan = $('<span/>').addClass('icon');
+                if (e.is_task) {
+                    $iconSpan.addClass('task');
+                } else {
+                    $iconSpan.addClass('event');
+                }
+                $div.append($iconSpan);
+
+                let $span = $('<span/>').addClass('start-time').text(
+                    e.is_indef_task ? 'asap' :
+                        (e.is_overdue_undone_task ? 'overdue' : `${pad10(e.start.hour)}:${pad10(e.start.minute)}`)
+                );
+                if (e.is_indef_task || e.is_overdue_undone_task) {
+                    $span.addClass('urgent');
+                }
+
+                $div.append($span);
+
+                $div.append($('<span/>').text((view_config.tasklist.show_cal_name ? `[${e.cal_name}] ` : '') + e.title));
+
+                $('div#task-list').append($div);
+            });
+        };
+
+        // renderTaskList();
+
+        const renderMonthlyCalendar = () => {
+            let $tr = $('div#calendar thead tr');
+            day_names.forEach(n => $('<td/>').text(n.substring(0, 3)).appendTo($tr));
+
+            let $tb = $('div#calendar tbody')
+            , thisMonth = weekday_events.find(wd => wd.is_today).month
+            , thisWeek = weekday_events.find(wd => wd.is_today).week;
+
+            const nrow = weekday_events.length / 7;
+
+            for (let i = 0; i < nrow; i++) {
+                let $tr = $('<tr/>');
+                let temp = weekday_events[i * 7];
+                $tr.append($('<td/>').text(temp.week));
+                if (temp.week === thisWeek) {
+                    $tr.addClass('this-week');
+                }
+
+                for (let j = 0; j < 7; j++) {
+
+                    let wd = weekday_events[i * 7 + j];
+                    let $td = $('<td/>');
+                    let $div = $('<div/>').appendTo($td);
+                    let $h1 = $('<h1/>').addClass('day').appendTo($div);
+                    let $span = $('<span/>').text(wd.day).appendTo($h1);
+
+
+                    if (wd.is_today) {
+                        $span.addClass('today');
+                    }
+                    if (wd.before_today) {
+                        $span.addClass('before-today');
+                    }
+                    if (wd.month !== thisMonth) {
+                        $span.addClass('other-month');
+                    }
+                    if (wd.events.length > 0) {
+                        // Let's also check if these are events that start that day!
+                        if (wd.events.filter(evt => (evt.start !== null && evt.start.day === wd.day) || (evt.is_task && evt.end !== null && evt.end.day === wd.day)).length > 0) {
+                            $span.addClass('has-events');
+                        }
+                    }
+                    if (wd.weekday === 7) {
+                        $span.addClass('red');
+                    }
+
+                    let $events = $('<div/>').addClass('eventlist').appendTo($div);
+                    for (const e of wd.events.filter(e => !e.is_task)) {
+                        $events.append($('<div/>').append(
+                            $('<span/>').addClass('start-time').text(`${pad10(e.start.hour)}:${pad10(e.start.minute)}`)
+                        ).append(
+                            $('<span/>').text(e.title)
+                        ));
+                    }
+
+                    $td.appendTo($tr);
+                }
+
+                $tr.appendTo($tb);
+            }
+        };
+
+        renderMonthlyCalendar();
+
+        const renderLastUpdated = () => {
+            $('<div/>').css({
+                position: 'absolute',
+                border: '1px solid #999',
+                borderWidth: '0 1px 1px',
+                width: '110px',
+                left: `${$today.width() / 2}px`,
+                top: '0px',
+                marginLeft: '-56px',
+                backgroundColor: '#eee',
+                textAlign: 'center',
+                fontFamily: 'WenQuanYi Micro Hei',
+                letterSpacing: '-1px',
+                lineHeight: '14px'
+            }).append(
+                $('<span/>').text('Updated:').css({
+                    marginRight: '.5ex'
+                })
+            ).append($('<span/>').text(`${pad10(time_now.hour)}:${pad10(time_now.minute)}:${pad10(time_now.second)}`).css({
+                fontFamily: 'WenQuanYi Micro Hei Mono',
+                fontWeight: 900,
+                fontSize: '12px'
+            })).appendTo($today);
+        };
+
+        // renderLastUpdated();
+    });
+    </script>
+</body>
+</html>

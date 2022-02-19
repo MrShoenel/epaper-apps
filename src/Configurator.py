@@ -75,6 +75,31 @@ class Configurator:
         
         self.api.addRoute(route='/calendar/3-way-1-day', fn=render3way1day)
 
+        def renderMultiWeek():
+            c = self.config['views']['multi-week']
+            num_weeks = c['num_weeks']
+            start_split = c['start_dt'][0].split('-')
+            start_dt = datetime.today().astimezone() # Start today; we'll support 'today' and 'monthstart'
+            if start_split[0] == 'monthstart' and start_dt.day > 1:
+                # Rewind to first day of month
+                start_dt = start_dt - timedelta(days=start_dt.day-1)
+                if start_dt.isoweekday() > 1:
+                    # Rewind to first weekday, perhaps into last day of previous month
+                    start_dt = start_dt - timedelta(days=start_dt.isoweekday() - 1)
+            
+            if len(start_split) > 1:
+                # We'll have to subtract some time; supported format is 'n_weeks', so we'll look for 'n'
+                start_dt = start_dt - timedelta(weeks=int(start_split[1].split('_')[0]))
+            
+            return render_template(
+                'calendar/multi-week.html',
+                time_now=datetime.now().astimezone(),
+                weekday_events=self.calendar.weekdayItems(num_weeks=num_weeks, start_dt=start_dt),
+                day_names=list(calendar.day_name),
+                view_config=self.config['views']['multi-week'])
+        
+        self.api.addRoute(route='/calendar/multi-week', fn=renderMultiWeek)
+
         self.logger.debug('Added calendar-related routes.')
 
         return self
