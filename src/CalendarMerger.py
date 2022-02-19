@@ -122,9 +122,9 @@ class IntervalCalendar:
         self.semaphore = Semaphore(value=1)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
-        def resetCal():
-            self.logger.debug(f'Resetting calendar {self.name}.')
-            self.cal_text = None
+    def resetCal():
+        self.logger.debug(f'Resetting calendar {self.name}.')
+        self.cal_text = None
         self.timer = Timer(interval=float(interval), function=resetCal)
         self.timer.start()
     
