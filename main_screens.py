@@ -11,7 +11,8 @@ if len(sys.argv) < 2:
 
 
 conf_name = sys.argv[1]
-conf = Configurator.fromJson(path='config.json').getScreenConfig(conf_name)
+conf = Configurator.fromJson(path='config.json')
+screen_conf = conf.getScreenConfig(conf_name)
 
 
 if __name__ == "__main__":
@@ -19,8 +20,8 @@ if __name__ == "__main__":
         os.setpgrp()
 
     try:
-        sm = ScreenshotMaker()
-        blackimg, redimg = sm.screenshot(**conf)
+        sm = ScreenshotMaker(driver=conf.getGeneralConfig()['screen_driver'])
+        blackimg, redimg = sm.screenshot(**screen_conf)
         with open(file=f'{conf_name}_b.png', mode='wb') as fp:
             blackimg.save(fp)
         with open(file=f'{conf_name}_r.png', mode='wb') as fp:
