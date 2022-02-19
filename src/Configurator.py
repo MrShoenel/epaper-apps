@@ -61,6 +61,9 @@ class Configurator:
         self.logger.debug('Added calendar-related routes.')
 
         return self
+    
+    def getGeneralConfig(self):
+        return self.config['general']
 
     def getScreenConfig(self, name: str):
         if not name in self.config['screens']:
