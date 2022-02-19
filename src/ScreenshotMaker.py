@@ -44,7 +44,7 @@ class ScreenshotMaker:
 
         return self
     
-    def screenshot(self, width: int, height: int, url: str):
+    def screenshot(self, width: int, height: int, url: str) -> [Image.Image, Image.Image]:
         self.setViewportSize(width=width, height=height)
         self.driver.get(url=url)
         sleep(1.5)
@@ -74,7 +74,5 @@ class ScreenshotMaker:
                     rpixels[i, j] = (255, 255, 255)
                 elif bpixels[i, j][0] > bpixels[i, j][1] and bpixels[i, j][0] > bpixels[i, j][2]:
                     bpixels[i, j] = (255, 255, 255)
-        
-        return blackimg, redimg
 
-        #return img
+        return blackimg, redimg
