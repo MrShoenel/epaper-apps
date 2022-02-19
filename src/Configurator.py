@@ -62,4 +62,14 @@ class Configurator:
 
         return self
 
+    def getScreenConfig(self, name: str):
+        if not name in self.config['screens']:
+            raise Exception(f'There is no configured screen with the name "{name}".')
+        conf = self.config['screens'][name]
+
+        api = self.config['api']
+        host = api['host']
+        port = api['port']
+        conf['url'] = f'http://{host}:{port}/calendar/{name}'
+        return conf
 
