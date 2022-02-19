@@ -8,18 +8,22 @@ from selenium import webdriver
 
 class ScreenshotMaker:
 
-    def __init__(self):
-        options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
-        self.driver = webdriver.Firefox(options=options)
-        # chrome_options = webdriver.ChromeOptions()
-        # chrome_options.add_argument('--headless')
-        # chrome_options.add_argument('--no-sandbox')
-        # chrome_options.add_argument('--hide-scrollbars')
-        # chrome_options.add_argument('--force-device-scale-factor=1')
-        # if os.name == 'nt':
-        #     chrome_options.binary_location = 'C:\\Program Files (Portable)\\chromium\\chrome.exe'
-        # self.driver = webdriver.Chrome(options=chrome_options)
+    def __init__(self, driver: str='gecko'):
+        if driver == 'gecko':
+            options = webdriver.FirefoxOptions()
+            options.add_argument('--headless')
+            self.driver = webdriver.Firefox(options=options)
+        elif driver == 'chrome':
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--hide-scrollbars')
+            chrome_options.add_argument('--force-device-scale-factor=1')
+            if os.name == 'nt':
+                chrome_options.binary_location = 'C:\\Program Files (Portable)\\chromium\\chrome.exe'
+            self.driver = webdriver.Chrome(options=chrome_options)
+        else:
+            raise Exception(f'Driver "{driver}" not known.')
     
     def __del__(self):
         self.driver.stop_client()
