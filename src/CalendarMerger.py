@@ -130,12 +130,15 @@ class IntervalCalendar:
             self.timer = Timer(interval=float(interval), function=resetCal)
             self.timer.start()
     
+    def isCached(self):
+        return type(self.cal_text) is str
+    
     def _getCalText(self):
         """This is a synchronized method.
         """
         self.semaphore.acquire()
         try:
-            if not type(self.cal_text) is str:
+            if not self.isCached():
                 # Then we have to re-fetch this calendar.
                 self.logger.debug(f'Downloading events for calendar {self.name}.')
                 res = http.get(url=self.url)
@@ -228,6 +231,9 @@ class Weekday:
 class CalendarMerger:
 
     def __init__(self, cal_config=None):
+        self.merged_evt: Calendar = None
+        self.merged_todo: Calendar = None
+
         self.calendars: dict[str, IntervalCalendar] = {}
         if not cal_config is None:
             for conf in cal_config['merge']:
@@ -238,6 +244,17 @@ class CalendarMerger:
         return self
     
     def getMergedCalendar(self, events=True) -> Calendar:
+        if not all([cal.isCached() for cal in self.calendars.values()]):
+            self.merged_evt = None
+            self.merged_todo = None
+
+        if events:
+            if type(self.merged_evt) is Calendar:
+                return self.merged_evt
+        else:
+            if type(self.merged_todo) is Calendar:
+                return self.merged_todo
+        
         c = Calendar()
         c.add('prodid', '-//icalcombine//NONSGML//EN')
         c.add('version', '2.0')
@@ -247,6 +264,10 @@ class CalendarMerger:
             for item in items:
                 c.add_component(item)
         
+        if events:
+            self.merged_evt = c
+        else:
+            self.merged_todo = c
         return c
     
     def todosBetween(self, start, stop, include_indefinite=True, include_overdue_undone=True) -> list[DataEvent]:
