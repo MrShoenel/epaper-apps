@@ -1,6 +1,8 @@
+import os
 import logging
 import threading
 import calendar
+import pathlib
 from datetime import datetime, timedelta
 from json import dumps, load
 from src.CustomFormatter import CustomFormatter
@@ -19,6 +21,8 @@ class Configurator:
 
     def __init__(self, config):
         self.config = config
+        data_folder = config['general']['data_folder'][os.name]
+        pathlib.Path(data_folder).mkdir(parents=True, exist_ok=True)
         CustomFormatter.setLevel(level=getattr(logging, config['general']['log_level'], None))
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
