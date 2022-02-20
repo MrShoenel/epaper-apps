@@ -1,2 +1,3 @@
 RPi.GPIO==0.7.1
 spidev==3.5
+rpi-lcd==0.0.2
