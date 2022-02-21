@@ -67,6 +67,7 @@ class Configurator:
             self.epaperStateMachine.activateProgress += activationProgress
 
     def initStateMachines(self):
+        self.logger.debug('Initializing state machines.')
         asyncio.run(asyncio.gather([
             self.epaperStateMachine.init(),
             self.textLcdStateMachine.init()

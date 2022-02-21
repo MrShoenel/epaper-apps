@@ -39,13 +39,14 @@ class ButtonsAndLeds(Events):
     def _triggerButton(self, btn: Button):
         now = datetime.now().timestamp()
         if (now - btn.last_press) > btn.bounce_time:
-            print(f'bounce_time={now - btn.last_press}, should be={btn.bounce_time}')
+            self.logger.debug(f'Button {btn.name} (pin={btn.pin}) was pressed.')
             btn.last_press = now
             self.on_button(btn)
         return self
 
     async def burnLed(self, led: Led, burn_for: float=None):
         duration = burn_for if type(burn_for) is float else led.burn_for
+        self.logger.debug('Burning LED {led.name} (pin={led.pin}) for {duration} seconds.')
 
         GPIO.output(led.pin, GPIO.HIGH)
         await asyncio.sleep(delay=duration)
