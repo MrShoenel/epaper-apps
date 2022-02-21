@@ -46,7 +46,7 @@ class StateManager(ABC, Events):
         # many user transitions. A pending timer-transition gets cancelled if
         # another transition gets called in the meantime. A user-transition
         # (type=external) is called from outside, with the target state's name.
-        timer_trans = list(filter(lambda t: t.type=='timer', self._stateConfig['transitions']))
+        timer_trans = list(filter(lambda t: t['type']=='timer', self._stateConfig['transitions']))
         if len(timer_trans) > 1:
             raise Exception('More than one timer-transition is defined for state "{state}".')
         if len(timer_trans) == 1:
