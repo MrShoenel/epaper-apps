@@ -29,7 +29,7 @@ class ButtonsAndLeds(Events):
         self._buttons: Set[Button] = set()
         self._leds: Set[Led] = set()
 
-        GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
+        GPIO.setmode(GPIO.BCM)
         atexit.register(self.cleanup)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
@@ -67,6 +67,7 @@ class ButtonsAndLeds(Events):
             raise Exception(f'There is already a button on pin {pin}.')
 
         btn = Button(pin=pin, name=name, bounce_time=bounce_time)
+        self.logger.debug(f'Adding button on GPIO {pin}.')
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         # Argument 'bouncetime' does not work reliably in the following set up call.
         GPIO.add_event_detect(gpio=pin, edge=GPIO.RISING, callback=lambda _: self._triggerButton(btn))
@@ -79,6 +80,7 @@ class ButtonsAndLeds(Events):
             raise Exception(f'There is already an LED on pin {pin}.')
 
         led = Led(pin=pin, name=name, burn_for=burn_for)
+        self.logger.debug(f'Adding LED on GPIO {pin}.')
         GPIO.setup(pin, GPIO.OUT)
         self._leds.add(led)
 

@@ -1,6 +1,8 @@
 from src.state.StateManager import StateManager
 from src.ePaper import ePaper
 from src.lcd.TextLCD import TextLCD
+from PIL import Image
+import os
 from os.path import abspath, join
 from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
@@ -26,9 +28,9 @@ class ePaperStateMachine(StateManager):
         
         blackimg = None
         redimg = None
-        with open(file=abspath(join(data_folder, f'{state_to}_b.png'))) as fp:
+        with open(file=abspath(join(data_folder, f'{state_to}_b.png')), mode='rb') as fp:
             blackimg = Image.open(fp=fp)
-        with open(file=abspath(join(data_folder, f'{state_to}_r.png'))) as fp:
+        with open(file=abspath(join(data_folder, f'{state_to}_r.png')), mode='rb') as fp:
             redimg = Image.open(fp=fp)
 
         # Now the following will take approx ~15-20 seconds. We will therefore
@@ -53,7 +55,7 @@ class ePaperStateMachine(StateManager):
 class TextLcdStateMachine(StateManager):
 
     def __init__(self, config):
-        super().__init__(stateConfig=config['state_managers']['textlcd'])
+        super().__init__(config=config, stateConfig=config['state_managers']['textlcd'])
         self._config = config
         self._lcd = TextLCD()
 
