@@ -121,4 +121,3 @@ class Configurator:
         port = api['port']
         conf['url'] = f'http://{host}:{port}/calendar/{name}'
         return conf
-
