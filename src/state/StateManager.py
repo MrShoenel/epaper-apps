@@ -79,7 +79,7 @@ class StateManager(ABC, Events):
             return self._initState(state_to=self._stateConfig['initial'])
 
         # Let's check if the current state has the requested transition:
-        transitions = list(filter(lambda t: (t['from']==self.state or t['from']=='*') and t.name==transition, self._stateConfig['transitions']))
+        transitions = list(filter(lambda t: (t['from']==self.state or t['from']=='*') and t['name']==transition, self._stateConfig['transitions']))
         if len(transitions) == 0:
             raise Exception('The current state "{self._state}" has no transition "{transition}".')
         elif len(transition) > 1:
