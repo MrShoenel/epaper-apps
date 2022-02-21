@@ -23,7 +23,9 @@ class ePaper():
         if not was_inited or clear_before:
             self.epaper.Clear()
         
-        self.epaper.display(imageblack=black_img, imagered=red_img)
+        self.epaper.display(
+            imageblack=self.epaper.getbuffer(black_img),
+            imagered=self.epaper.getbuffer(red_img))
         
         if sleep_after:
             self.logger.debug('Sending e-paper display to sleep.')
@@ -33,12 +35,16 @@ class ePaper():
     
     def calibrate(self, cycles=1):
         # Calibrates the display to prevent ghosting
-        white = Image.new('1', (self.screenwidth, self.screenheight), 'white')
-        black = Image.new('1', (self.screenwidth, self.screenheight), 'black')
+        white = self.epaper.getbuffer(
+            Image.new('1', (self.screenwidth, self.screenheight), 'white'))
+        black = self.epaper.getbuffer(
+            Image.new('1', (self.screenwidth, self.screenheight), 'black'))
+
         for _ in range(cycles):
-            self.epd.display(black, white)
-            self.epd.display(white, black)
-            self.epd.display(white, white)
+            self.epaper.display(black, white)
+            self.epaper.display(white, black)
+            self.epaper.display(white, white)
+
         self.logger.info(f'Calibrated e-paper display using {cycles} cycles.')
         return self
 
