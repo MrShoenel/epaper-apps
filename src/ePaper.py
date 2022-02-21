@@ -7,7 +7,7 @@ class ePaper():
     def __init__(self):
         self.epaper = EPD()
         self._inited = False
-        self.logger = CustomFormatter.getLoggerFor(self.__class__.name)
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
     def __del__(self):
         self.epaper.init()

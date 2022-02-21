@@ -57,7 +57,7 @@ class Datetime(LcdApp):
         if type(self._timerl1) is Timer:
             self._timerl1.cancel()
             del self._timerl1
-        if (type self._timerl2) is Timer:
+        if type(self._timerl2) is Timer:
             self._timerl2.cancel()
             del self._timerl2
         

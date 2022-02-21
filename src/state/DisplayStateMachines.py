@@ -13,7 +13,7 @@ from asyncio import run, sleep
 class ePaperStateMachine(StateManager):
     
     def __init__(self, config):
-        super.__init__(stateConfig=config['state_managers']['epaper'])
+        super().__init__(stateConfig=config['state_managers']['epaper'])
         self._config = config
         self._epaper = ePaper()
 
@@ -52,7 +52,7 @@ class ePaperStateMachine(StateManager):
 class TextLcdStateMachine(StateManager):
 
     def __init__(self, config):
-        super.__init__(stateConfig=config['state_managers']['textlcd'])
+        super().__init__(stateConfig=config['state_managers']['textlcd'])
         self._config = config
         self._lcd = TextLCD()
 
@@ -60,13 +60,13 @@ class TextLcdStateMachine(StateManager):
         # of target states that we can transition into, no matter where we're coming
         # from. Since the LCD display something lively in those states, we have mini-
         # "apps" that are activated once we get there.
-        self._apps: Dict[str, LcdApp]
+        self._apps: Dict[str, LcdApp] = {}
 
-        for transition in self._stateConfig['transitions'].values():
+        for transition in self._stateConfig['transitions']:
             args = transition['args']
-            if transition.name == 'show-progress':
+            if transition['name'] == 'show-progress':
                 self._apps['show-progress'] = Progress(lcd=self._lcd, strFn=lambda: 'Loading', show_percent='percent' in args, show_dots='dots' in args)
-            elif transition.name == 'show-datetime':
+            elif transition['name'] == 'show-datetime':
                 self._apps['show-datetime'] = Datetime(lcd=self._lcd, mode=args['mode'], l1interval=args['line1_timer'], l2interval=args['line2_timer'])
     
     def getApp(self, name: str) -> LcdApp:

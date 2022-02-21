@@ -5,12 +5,11 @@ from events import Events
 
 
 class StateManager(ABC, Events):
-    __events__ = ('beforeInit', 'activateProgress', 'afterFinalize')
 
     def __init__(self, stateConfig):
+        Events.__init__(self=self, events=('beforeInit', 'activateProgress', 'afterFinalize'))
         self._stateConfig = stateConfig
         self._state: str = None
-        self._epaper = ePaper()
         self._timer: Timer = None
     
     @property
