@@ -3,14 +3,16 @@ import logging
 import threading
 import calendar
 import pathlib
+import asyncio
 from datetime import datetime, timedelta
 from json import dumps, load
 from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
 from src.Api import Api
+from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
+from src.state.StateManager import StateManager
+from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
 from flask import render_template, request
-
-
 
 
 class Configurator:
@@ -30,6 +32,9 @@ class Configurator:
 
         self.api: Api = Api()
         self.calendar: CalendarMerger = None
+        self.epaperStateMachine: ePaperStateMachine = None
+        self.hasTextLcd: bool = False
+        self.textLcdStateMachine: TextLcdStateMachine = None
     
 
     def fromJson(path: str='config.json'):
@@ -44,6 +49,50 @@ class Configurator:
     def stopApi(self):
         self.api.stop()
         return self
+    
+    def setupStateMachines(self):
+        
+        # Note that it requires the entire config.
+        self.epaperStateMachine = ePaperStateMachine(config=self.config)
+
+        if 'textlcd' in self.config['state_managers'].keys():
+            self.hasTextLcd = True
+            self.textLcdStateMachine = TextLcdStateMachine(config=self.config)
+
+            # The LCD is controlled solely by the e-paper, as it depends on
+            # the actions applicable to it. So we'll set up the hooks here.
+            self.epaperStateMachine.beforeInit += lambda sm: self.textLcdStateMachine.activate(transition='show-progress')
+            self.epaperStateMachine.afterFinalize += lambda sm: self.textLcdStateMachine.activate(transition='show-datetime')
+            self.epaperStateMachine.activateProgress += lambda sm, progress: self.textLcdStateMachine.getApp('show-progress').progress = progress
+    
+    def setupBtnLedControl(self):
+        ctrl = ButtonsAndLeds()
+
+        for c in self.config['inputs']:
+            ctrl.addButton(pin=c['pin'], name=c['name'], bounce_time=c['bounce_time'])
+        
+        leds: Dict[str, Led] = {}
+        for c in self.config['outputs']:
+            leds[c['name']] = ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
+        
+        def button_callback(btn: Button):
+            futures = []
+            # find associated config:
+            c = list(filter(lambda conf: btn.name==conf['name'], self.config['inputs']))[0]
+            # Check if this button triggers one of the available transitions:
+            at = set(map(lambda trans: trans.name, self.epaperStateMachine.availableTransitions()))
+            common = at.intersection(set(c['transitions']))
+            if len(common) == 1:
+                futures.append(self.epaperStateMachine.activate(transition=list(at)[0]))
+            
+            # let's also check if this button press has an output action:
+            if 'output' in c and c['output']['name'] in leds.keys():
+                led = leds[c['output']['name']]
+                futures.append(ctrl.burnLed(led=led, burn_for=c['output']['duration']))
+            
+            asyncio.run(asyncio.gather(futures))
+
+        ctrl.on_button += button_callback
     
     def setupCalendar(self):
         self.calendar = CalendarMerger(cal_config=self.config['calendar'])
