@@ -9,6 +9,7 @@ charset-normalizer==2.0.11
 click==8.0.3
 colorama==0.4.4
 cryptography==36.0.1
+Events==0.4
 Flask==2.0.2
 h11==0.13.0
 h2==4.1.0
@@ -19,6 +20,7 @@ idna==3.3
 importlib-metadata==4.11.0
 itsdangerous==2.0.1
 Jinja2==3.0.3
+joblib==1.1.0
 jsons==1.6.1
 kaitaistruct==0.9
 MarkupSafe==2.0.1
