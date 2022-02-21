@@ -69,10 +69,14 @@ class Configurator:
 
     def initStateMachines(self):
         self.logger.debug('Initializing state machines.')
-        asyncio.run(asyncio.gather([
-            self.epaperStateMachine.init(),
-            self.textLcdStateMachine.init()
-        ]))
+
+        async def temp():
+            return asyncio.gather(*[
+                self.epaperStateMachine.init(),
+                self.textLcdStateMachine.init()
+            ])
+
+        asyncio.run(temp())
         self.logger.debug('Finished initializing state machines.')
         return self
 
@@ -102,7 +106,10 @@ class Configurator:
                 led = leds[c['output']['name']]
                 futures.append(ctrl.burnLed(led=led, burn_for=c['output']['duration']))
             
-            asyncio.run(asyncio.gather(futures))
+            async def temp():
+                return await asyncio.gather(*futures)
+            
+            asyncio.run(temp())
 
         ctrl.on_button += button_callback
     
