@@ -44,6 +44,7 @@ class Progress(LcdApp):
         if self.show_percent:
             percent = '{:3.0f}%'.format(int(self.progress * 100))
             line1 += percent
+        line1 = line1.ljust(self._lcd.cols)[0:self._lcd.cols]
         
         line2 = self.generateProgressBar()
         
@@ -59,4 +60,4 @@ class Progress(LcdApp):
         numUsed = int(ceil(self.progress * 100.0) / pCols)
         arrow = '>' if numUsed < pCols else ''
 
-        return f'[{numUsed * "#"}{arrow}]'
+        return f'[{numUsed * "#"}{arrow}{max(pCols - numUsed - 1, 0) * " "}]'
