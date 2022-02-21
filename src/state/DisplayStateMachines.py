@@ -1,6 +1,7 @@
 from src.state.StateManager import StateManager
 from src.ePaper import ePaper
 from src.lcd.TextLCD import TextLCD
+from os.path import abspath, join
 from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.apps.Datetime import Datetime
@@ -16,7 +17,7 @@ class ePaperStateMachine(StateManager):
         self._config = config
         self._epaper = ePaper()
 
-    async def finalize(self, state_from: str, transition: str, state_to: str, **kwargs):
+    async def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         # activating a state means to display its rendered images on the e-paper.
         # This happens outside of this application, and we rely on the images
         # being present at this point.
@@ -25,9 +26,9 @@ class ePaperStateMachine(StateManager):
         
         blackimg = None
         redimg = None
-        with open(file=abspath(join(data_folder, f'{state}_b.png')) as fp:
+        with open(file=abspath(join(data_folder, f'{state_to}_b.png'))) as fp:
             blackimg = Image.open(fp=fp)
-        with open(file=abspath(join(data_folder, f'{state}_r.png')) as fp:
+        with open(file=abspath(join(data_folder, f'{state_to}_r.png'))) as fp:
             redimg = Image.open(fp=fp)
 
         # Now the following will take approx ~15-20 seconds. We will therefore
@@ -73,7 +74,7 @@ class TextLcdStateMachine(StateManager):
             return self[name]
         raise Exception(f'No app with name "{name}" registered.')
 
-    async def finalize(self, state_from: str, transition: str, state_to: str, **kwargs):
+    async def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         """
         Here we'll just activate the correct app.
         """

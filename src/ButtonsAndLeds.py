@@ -1,8 +1,8 @@
-from CustomFormatter import CustomFormatter
+from src.CustomFormatter import CustomFormatter
 from events import Events
 from typing import Dict, Set
 from datetime import datetime
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import asyncio
 import atexit
 
@@ -29,7 +29,7 @@ class ButtonsAndLeds(Events):
         self._buttons: Set[Button] = set()
         self._leds: Set[Led] = set()
 
-        GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
+        # GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
         atexit.register(self.cleanup)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.name)
 
@@ -66,9 +66,9 @@ class ButtonsAndLeds(Events):
             raise Exception(f'There is already a button on pin {pin}.')
 
         btn = Button(pin=pin, name=name, bounce_time=bounce_time)
-        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        # GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         # Argument 'bouncetime' does not work reliably in the following set up call.
-        GPIO.add_event_detect(gpio=pin, edge=GPIO.RISING, callback=lambda _: self._triggerButton(btn))
+        # GPIO.add_event_detect(gpio=pin, edge=GPIO.RISING, callback=lambda _: self._triggerButton(btn))
         self._buttons.add(btn)
 
         return btn
@@ -78,7 +78,7 @@ class ButtonsAndLeds(Events):
             raise Exception(f'There is already an LED on pin {pin}.')
 
         led = Led(pin=pin, name=name, burn_for=burn_for)
-        GPIO.setup(pin, GPIO.OUT)
+        # GPIO.setup(pin, GPIO.OUT)
         self._leds.add(led)
 
         return led

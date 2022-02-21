@@ -1,8 +1,4 @@
-import os
-from os.path import abspath, join
-from pathlib import 
 from threading import Timer
-from PIL import Image
 from abc import ABC, abstractmethod
 from events import Events
 
@@ -33,7 +29,7 @@ class StateManager(ABC, Events):
         self._timer = Timer(interval=timeout, function=lambda: self.activate(transition='timer'))
         return self
     
-    async def _initState(self, state_from: str=None, transition: str=None, state_to: str, **kwargs):
+    async def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         c = self._stateConfig
         # 'state_to' must be one of the defined views.
         if not state_to in c['views'].keys():
@@ -72,7 +68,7 @@ class StateManager(ABC, Events):
         return self.activate(transition=None)
     
     def availableTransitions(self):
-        return list(filter(function=lambda t: t.from==self.state || t.from=='*'))
+        return list(filter(function=lambda t: t['from']==self.state or t['from']=='*', iterable=self._stateConfig['transitions']))
     
     async def activate(self, transition: str=None):
         """
@@ -85,7 +81,7 @@ class StateManager(ABC, Events):
             return self._initState(state=self._stateConfig['initial'])
 
         # Let's check if the current state has the requested transition:
-        transitions = list(filter(function=lambda t: (t.from==self.state or t.from=='*') and t.name==transition, iterable=self._stateConfig['transitions']))
+        transitions = list(filter(function=lambda t: (t['from']==self.state or t['from']=='*') and t.name==transition, iterable=self._stateConfig['transitions']))
         if len(transitions) == 0:
             raise Exception('The current state "{self._state}" has no transition "{transition}".')
         elif len(transition) > 1:
@@ -95,7 +91,7 @@ class StateManager(ABC, Events):
         return self._initState(state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=trans['args'])
 
     @abstractmethod
-    async def finalize(self, state_from: str=None, transition: str=None, state_to: str, **kwargs):
+    async def finalize(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         """
         This method is the user implementation of what exactly happens once the
         state machine acknowledges the transition into a new state.

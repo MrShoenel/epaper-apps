@@ -51,7 +51,6 @@ class Configurator:
         return self
     
     def setupStateMachines(self):
-        
         # Note that it requires the entire config.
         self.epaperStateMachine = ePaperStateMachine(config=self.config)
 
@@ -63,8 +62,17 @@ class Configurator:
             # the actions applicable to it. So we'll set up the hooks here.
             self.epaperStateMachine.beforeInit += lambda sm: self.textLcdStateMachine.activate(transition='show-progress')
             self.epaperStateMachine.afterFinalize += lambda sm: self.textLcdStateMachine.activate(transition='show-datetime')
-            self.epaperStateMachine.activateProgress += lambda sm, progress: self.textLcdStateMachine.getApp('show-progress').progress = progress
-    
+            def activationProgress(progress: float):
+                self.textLcdStateMachine.getApp('show-progress').progress = progress
+            self.epaperStateMachine.activateProgress += activationProgress
+
+    def initStateMachines(self):
+        asyncio.run(asyncio.gather([
+            self.epaperStateMachine.init(),
+            self.textLcdStateMachine.init()
+        ]))
+        return self
+
     def setupBtnLedControl(self):
         ctrl = ButtonsAndLeds()
 
