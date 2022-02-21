@@ -6,8 +6,9 @@ from src.CustomFormatter import CustomFormatter
 
 class StateManager(ABC, Events):
 
-    def __init__(self, stateConfig):
+    def __init__(self, config, stateConfig):
         Events.__init__(self=self, events=('beforeInit', 'activateProgress', 'afterFinalize'))
+        self._config = config
         self._stateConfig = stateConfig
         self._state: str = None
         self._timer: Timer = None
@@ -30,7 +31,7 @@ class StateManager(ABC, Events):
         return self
     
     async def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
-        c = self._stateConfig
+        c = self._config
         # 'state_to' must be one of the defined views.
         if not state_to in c['views'].keys():
             raise Exception(f'The state "{state_to}" is not defined.')
@@ -80,7 +81,7 @@ class StateManager(ABC, Events):
         if not type(transition) is str:
             if type(self._state) is str:
                 raise Exception(f'"transition" may only be None if activating the initial state.')
-            return self._initState(state=self._stateConfig['initial'])
+            return await self._initState(state_to=self._stateConfig['initial'])
 
         # Let's check if the current state has the requested transition:
         transitions = list(filter(function=lambda t: (t['from']==self.state or t['from']=='*') and t.name==transition, iterable=self._stateConfig['transitions']))

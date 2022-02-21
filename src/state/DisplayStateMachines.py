@@ -13,7 +13,7 @@ from asyncio import run, sleep
 class ePaperStateMachine(StateManager):
     
     def __init__(self, config):
-        super().__init__(stateConfig=config['state_managers']['epaper'])
+        super().__init__(config=config, stateConfig=config['state_managers']['epaper'])
         self._config = config
         self._epaper = ePaper()
 
