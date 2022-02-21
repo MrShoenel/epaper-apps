@@ -35,15 +35,14 @@ class ePaper():
     
     def calibrate(self, cycles=1):
         # Calibrates the display to prevent ghosting
-        white = self.epaper.getbuffer(
-            Image.new('1', (self.screenwidth, self.screenheight), 'white'))
-        black = self.epaper.getbuffer(
-            Image.new('1', (self.screenwidth, self.screenheight), 'black'))
+        white = Image.new('1', (800, 480), 'white')
+        black = Image.new('1', (800, 480), 'black')
 
         for _ in range(cycles):
-            self.epaper.display(black, white)
-            self.epaper.display(white, black)
-            self.epaper.display(white, white)
+            self.display(black, white)
+            self.display(black, white)
+            self.display(white, black)
+            self.display(white, white)
 
         self.logger.info(f'Calibrated e-paper display using {cycles} cycles.')
         return self
