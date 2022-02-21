@@ -17,7 +17,7 @@ class Progress(LcdApp):
         self._num_dots = 0
         self._timer: Timer = None
 
-    async def start(self):
+    def start(self):
         self._timer = Timer(interval=0.5, function=self.update)
         self._timer.start()
         return self

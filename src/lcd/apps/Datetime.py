@@ -38,7 +38,7 @@ class Datetime(LcdApp):
         self._timerl1: Timer = None
         self._timerl2: Timer = None
     
-    async def start(self):
+    def start(self):
         self._stop()
         self._activateTimers = True
 

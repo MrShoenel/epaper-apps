@@ -90,7 +90,7 @@ class TextLcdStateMachine(StateManager):
         Here we'll just activate the correct app.
         """
         for app in self._apps.values():
-            app.stop()
+            await app.stop()
 
         if transition in self._apps.keys():
             self._apps[transition].start()

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class LcdApp(ABC):
     @abstractmethod
-    async def start(self):
+    def start(self):
         pass
 
     @abstractmethod
