@@ -51,6 +51,7 @@ class Configurator:
         return self
     
     def setupStateMachines(self):
+        self.logger.info('Setting up state machines.')
         # Note that it requires the entire config.
         self.epaperStateMachine = ePaperStateMachine(config=self.config)
 
@@ -72,9 +73,11 @@ class Configurator:
             self.epaperStateMachine.init(),
             self.textLcdStateMachine.init()
         ]))
+        self.logger.debug('Finished initializing state machines.')
         return self
 
     def setupBtnLedControl(self):
+        self.logger.info('Setting up Button- and Led controls.')
         ctrl = ButtonsAndLeds()
 
         for c in self.config['inputs']:
