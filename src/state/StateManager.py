@@ -82,7 +82,7 @@ class StateManager(ABC, Events):
         transitions = list(filter(lambda t: (t['from']==self.state or t['from']=='*') and t['name']==transition, self._stateConfig['transitions']))
         if len(transitions) == 0:
             raise Exception('The current state "{self._state}" has no transition "{transition}".')
-        elif len(transition) > 1:
+        elif len(transitions) > 1:
             raise Exception('The current state "{self._state}" has more than one transition with the name "{transition}".')
 
         trans = transitions[0]

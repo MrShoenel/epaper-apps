@@ -25,7 +25,6 @@ class Progress(LcdApp):
     def stop(self):
         if type(self._timer) is Timer:
             self._timer.cancel()
-            del self._timer
         
         self._lcd.clear()
         

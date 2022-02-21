@@ -1,3 +1,4 @@
+import calendar
 from datetime import datetime
 from src.lcd.TextLCD import TextLCD
 from src.lcd.apps.LcdApp import LcdApp
@@ -39,7 +40,7 @@ class Datetime(LcdApp):
         self._timerl2: Timer = None
     
     def start(self):
-        self._stop()
+        self.stop()
         self._activateTimers = True
 
         self._s1.reset()
@@ -56,10 +57,8 @@ class Datetime(LcdApp):
         self._activateTimers = False
         if type(self._timerl1) is Timer:
             self._timerl1.cancel()
-            del self._timerl1
         if type(self._timerl2) is Timer:
             self._timerl2.cancel()
-            del self._timerl2
         
         self._lcd.clear()
         
