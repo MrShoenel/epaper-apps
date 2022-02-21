@@ -3,7 +3,7 @@ import logging
 import threading
 import calendar
 import pathlib
-import asyncio
+from threading import Thread
 from datetime import datetime, timedelta
 from json import dumps, load
 from src.CustomFormatter import CustomFormatter
@@ -92,6 +92,7 @@ class Configurator:
             leds[c['name']] = ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
         
         def button_callback(btn: Button):
+            threads = []
             futures = []
             # find associated config:
             c = list(filter(lambda conf: btn.name==conf['name'], self.config['inputs']))[0]
@@ -99,17 +100,19 @@ class Configurator:
             at = set(map(lambda trans: trans.name, self.epaperStateMachine.availableTransitions()))
             common = at.intersection(set(c['transitions']))
             if len(common) == 1:
-                futures.append(self.epaperStateMachine.activate(transition=list(at)[0]))
+                t = Thread(target=lambda: self.epaperStateMachine.activate(transition=list(at)[0]))
+                t.start()
+                threads.append(t)
             
             # let's also check if this button press has an output action:
             if 'output' in c and c['output']['name'] in leds.keys():
                 led = leds[c['output']['name']]
-                futures.append(ctrl.burnLed(led=led, burn_for=c['output']['duration']))
-            
-            async def temp():
-                return await asyncio.gather(*futures)
-            
-            asyncio.run(temp())
+                t = Thread(target=lambda: ctrl.burnLed(led=led, burn_for=c['output']['duration']))
+                t.start()
+                threads.append(t)
+
+            for thread in threads:
+                thread.join()
 
         ctrl.on_button += button_callback
     

@@ -8,7 +8,8 @@ from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.apps.Datetime import Datetime
 from src.lcd.apps.Progress import Progress
-from asyncio import run, sleep
+from threading import Thread
+from time import sleep
 
 
 
@@ -19,7 +20,7 @@ class ePaperStateMachine(StateManager):
         self._config = config
         self._epaper = ePaper()
 
-    async def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
+    def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         # activating a state means to display its rendered images on the e-paper.
         # This happens outside of this application, and we rely on the images
         # being present at this point.
@@ -38,19 +39,21 @@ class ePaperStateMachine(StateManager):
 
             # Now the following will take approx ~15-20 seconds. We will therefore
             # repeatedly trigger the progress event.
-            async def progress():
+            def progress():
                 n = 40 # number of updates, ~2.5% steps
                 for i in range(1, n+1):
                     self.logger.debug('Event: activateProgress')
                     self.activateProgress(sm=self, progress=float(i)/float(n))
-                    await sleep(float(n)/float(15)) # We assume 15 seconds for now..
+                    sleep(float(n)/float(15)) # We assume 15 seconds for now..
             
-            progress_fut = progress()
+            progress_thread = Thread(target=progress)
+            progress_thread.start()
             
             self._epaper.display(black_img=blackimg, red_img=redimg)
             self._state = state_to
 
-            await progress_fut
+            progress_thread.join()
+            del progress_thread
         finally:
             if not fp_black is None and not fp_black.closed:
                 fp_black.close()
@@ -85,12 +88,12 @@ class TextLcdStateMachine(StateManager):
             return self._apps[name]
         raise Exception(f'No app with name "{name}" registered.')
 
-    async def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
+    def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         """
         Here we'll just activate the correct app.
         """
         for app in self._apps.values():
-            await app.stop()
+            app.stop()
 
         if transition in self._apps.keys():
             self._apps[transition].start()

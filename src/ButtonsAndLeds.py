@@ -2,8 +2,8 @@ from src.CustomFormatter import CustomFormatter
 from events import Events
 from typing import Dict, Set
 from datetime import datetime
+from time import sleep
 import RPi.GPIO as GPIO
-import asyncio
 import atexit
 
 
@@ -44,12 +44,12 @@ class ButtonsAndLeds(Events):
             self.on_button(btn)
         return self
 
-    async def burnLed(self, led: Led, burn_for: float=None):
+    def burnLed(self, led: Led, burn_for: float=None):
         duration = burn_for if type(burn_for) is float else led.burn_for
         self.logger.debug('Burning LED {led.name} (pin={led.pin}) for {duration} seconds.')
 
         GPIO.output(led.pin, GPIO.HIGH)
-        await asyncio.sleep(delay=duration)
+        sleep(secs=duration)
         GPIO.output(led.pin, GPIO.LOW)
         return self
     

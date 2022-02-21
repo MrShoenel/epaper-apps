@@ -22,7 +22,7 @@ class Progress(LcdApp):
         self._timer.start()
         return self
 
-    async def stop(self):
+    def stop(self):
         if type(self._timer) is Timer:
             self._timer.cancel()
             del self._timer

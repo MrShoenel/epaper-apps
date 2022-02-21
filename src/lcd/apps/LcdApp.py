@@ -7,5 +7,5 @@ class LcdApp(ABC):
         pass
 
     @abstractmethod
-    async def stop(self):
+    def stop(self):
         pass

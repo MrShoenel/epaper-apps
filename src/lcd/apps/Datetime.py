@@ -52,7 +52,7 @@ class Datetime(LcdApp):
 
         return self
     
-    async def stop(self):
+    def stop(self):
         self._activateTimers = False
         if type(self._timerl1) is Timer:
             self._timerl1.cancel()

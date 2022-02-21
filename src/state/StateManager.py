@@ -30,14 +30,14 @@ class StateManager(ABC, Events):
         self._timer = Timer(interval=timeout, function=lambda: self.activate(transition='timer'))
         return self
     
-    async def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
+    def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         self.logger.debug('Event: beforeInit')
         self.beforeInit(sm=self)
 
         self._unsetTimer()
 
         # Now wait for the user implementation (init logic of the transition-into state):
-        await self.finalize(state_from=state_from, transition=transition, state_to=state_to, kwargs=kwargs)
+        self.finalize(state_from=state_from, transition=transition, state_to=state_to, kwargs=kwargs)
         # Now if this was successful, replace the current state:
         self._state = state_to
 
@@ -58,17 +58,17 @@ class StateManager(ABC, Events):
 
         return self
     
-    async def init(self):
+    def init(self):
         """
         Transitions this state machine from an uninitialized state into
         its defined initial state.
         """
-        return await self.activate(transition=None)
+        return self.activate(transition=None)
     
     def availableTransitions(self):
         return list(filter(lambda t: t['from']==self.state or t['from']=='*', self._stateConfig['transitions']))
     
-    async def activate(self, transition: str=None):
+    def activate(self, transition: str=None):
         """
         This method is supposed to be called by the user, in order to start (or
         activate) a transition by name.
@@ -76,7 +76,7 @@ class StateManager(ABC, Events):
         if not type(transition) is str:
             if type(self._state) is str:
                 raise Exception(f'"transition" may only be None if activating the initial state.')
-            return await self._initState(state_to=self._stateConfig['initial'])
+            return self._initState(state_to=self._stateConfig['initial'])
 
         # Let's check if the current state has the requested transition:
         transitions = list(filter(lambda t: (t['from']==self.state or t['from']=='*') and t.name==transition, self._stateConfig['transitions']))
@@ -86,11 +86,11 @@ class StateManager(ABC, Events):
             raise Exception('The current state "{self._state}" has more than one transition with the name "{transition}".')
 
         trans = transitions[0]
-        return await self._initState(
+        return self._initState(
             state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=trans['args'])
 
     @abstractmethod
-    async def finalize(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
+    def finalize(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         """
         This method is the user implementation of what exactly happens once the
         state machine acknowledges the transition into a new state.
