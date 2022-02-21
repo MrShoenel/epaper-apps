@@ -70,13 +70,15 @@ class Configurator:
     def initStateMachines(self):
         self.logger.debug('Initializing state machines.')
 
-        async def temp():
-            return asyncio.gather(*[
-                self.epaperStateMachine.init(),
-                self.textLcdStateMachine.init()
-            ])
+        t1 = Thread(target=lambda: self.epaperStateMachine.init())
+        t2 = Thread(target=lambda: self.textLcdStateMachine.init())
+        
+        t1.start()
+        t2.start()
 
-        asyncio.run(temp())
+        t1.join()
+        t2.join()
+
         self.logger.debug('Finished initializing state machines.')
         return self
 
