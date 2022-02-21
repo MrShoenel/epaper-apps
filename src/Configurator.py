@@ -63,7 +63,7 @@ class Configurator:
             # the actions applicable to it. So we'll set up the hooks here.
             self.epaperStateMachine.beforeInit += lambda sm: self.textLcdStateMachine.activate(transition='show-progress')
             self.epaperStateMachine.afterFinalize += lambda sm: self.textLcdStateMachine.activate(transition='show-datetime')
-            def activationProgress(progress: float):
+            def activationProgress(sm: StateManager, progress: float):
                 self.textLcdStateMachine.getApp('show-progress').progress = progress
             self.epaperStateMachine.activateProgress += activationProgress
 

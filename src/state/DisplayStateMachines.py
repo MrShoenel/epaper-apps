@@ -48,13 +48,13 @@ class ePaperStateMachine(StateManager):
             progress_fut = progress()
             
             self._epaper.display(black_img=blackimg, red_img=redimg)
-            self._state = state
+            self._state = state_to
 
             await progress_fut
         finally:
-            if not fp_black is None and not fp_black.closed():
+            if not fp_black is None and not fp_black.closed:
                 fp_black.close()
-            if not fp_red is None and not fp_red.closed():
+            if not fp_red is None and not fp_red.closed:
                 fp_red.close()
 
         return self
@@ -82,7 +82,7 @@ class TextLcdStateMachine(StateManager):
     
     def getApp(self, name: str) -> LcdApp:
         if name in self._apps.keys():
-            return self[name]
+            return self._apps[name]
         raise Exception(f'No app with name "{name}" registered.')
 
     async def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):

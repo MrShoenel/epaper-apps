@@ -51,7 +51,7 @@ class StateManager(ABC, Events):
         # many user transitions. A pending timer-transition gets cancelled if
         # another transition gets called in the meantime. A user-transition
         # (type=external) is called from outside, with the target state's name.
-        timer_trans = list(filter(function=lambda t: t.type=='timer', iterable=self._stateConfig['transitions']))
+        timer_trans = list(filter(lambda t: t.type=='timer', self._stateConfig['transitions']))
         if len(timer_trans) > 1:
             raise Exception('More than one timer-transition is defined for state "{state}".')
         if len(timer_trans) == 1:
@@ -71,7 +71,7 @@ class StateManager(ABC, Events):
         return await self.activate(transition=None)
     
     def availableTransitions(self):
-        return list(filter(function=lambda t: t['from']==self.state or t['from']=='*', iterable=self._stateConfig['transitions']))
+        return list(filter(lambda t: t['from']==self.state or t['from']=='*', self._stateConfig['transitions']))
     
     async def activate(self, transition: str=None):
         """
@@ -84,7 +84,7 @@ class StateManager(ABC, Events):
             return await self._initState(state_to=self._stateConfig['initial'])
 
         # Let's check if the current state has the requested transition:
-        transitions = list(filter(function=lambda t: (t['from']==self.state or t['from']=='*') and t.name==transition, iterable=self._stateConfig['transitions']))
+        transitions = list(filter(lambda t: (t['from']==self.state or t['from']=='*') and t.name==transition, self._stateConfig['transitions']))
         if len(transitions) == 0:
             raise Exception('The current state "{self._state}" has no transition "{transition}".')
         elif len(transition) > 1:
