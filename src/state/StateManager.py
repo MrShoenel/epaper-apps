@@ -31,11 +31,6 @@ class StateManager(ABC, Events):
         return self
     
     async def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
-        c = self._config
-        # 'state_to' must be one of the defined views.
-        if not state_to in c['views'].keys():
-            raise Exception(f'The state "{state_to}" is not defined.')
-
         self.logger.debug('Event: beforeInit')
         self.beforeInit(sm=self)
 
