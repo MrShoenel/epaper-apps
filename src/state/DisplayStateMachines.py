@@ -25,29 +25,37 @@ class ePaperStateMachine(StateManager):
         # being present at this point.
         # If we also use an LCD, we may also show some info there.
         data_folder = self._config['general']['data_folder'][os.name]
-        
-        blackimg = None
-        redimg = None
-        with open(file=abspath(join(data_folder, f'{state_to}_b.png')), mode='rb') as fp:
-            blackimg = Image.open(fp=fp)
-        with open(file=abspath(join(data_folder, f'{state_to}_r.png')), mode='rb') as fp:
-            redimg = Image.open(fp=fp)
 
-        # Now the following will take approx ~15-20 seconds. We will therefore
-        # repeatedly trigger the progress event.
-        async def progress():
-            n = 40 # number of updates, ~2.5% steps
-            for i in range(1, n+1):
-                self.logger.debug('Event: activateProgress')
-                self.activateProgress(sm=self, progress=float(i)/float(n))
-                await sleep(float(n)/float(15)) # We assume 15 seconds for now..
-        
-        progress_fut = progress()
-        
-        self._epaper.display(black_img=blackimg, red_img=redimg)
-        self._state = state
+        fp_black = None
+        fp_red = None
+        try:
+            fp_black = open(file=abspath(join(data_folder, f'{state_to}_b.png')), mode='rb')
+            fp_red = open(file=abspath(join(data_folder, f'{state_to}_r.png')), mode='rb')
+            
+            blackimg = Image.open(fp=fp_black)
+            redimg = Image.open(fp=fp_red)
+            
 
-        await progress_fut
+            # Now the following will take approx ~15-20 seconds. We will therefore
+            # repeatedly trigger the progress event.
+            async def progress():
+                n = 40 # number of updates, ~2.5% steps
+                for i in range(1, n+1):
+                    self.logger.debug('Event: activateProgress')
+                    self.activateProgress(sm=self, progress=float(i)/float(n))
+                    await sleep(float(n)/float(15)) # We assume 15 seconds for now..
+            
+            progress_fut = progress()
+            
+            self._epaper.display(black_img=blackimg, red_img=redimg)
+            self._state = state
+
+            await progress_fut
+        finally:
+            if not fp_black is None and not fp_black.closed():
+                fp_black.close()
+            if not fp_red is None and not fp_red.closed():
+                fp_red.close()
 
         return self
 
