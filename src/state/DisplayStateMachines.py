@@ -36,6 +36,7 @@ class ePaperStateMachine(StateManager):
         async def progress():
             n = 40 # number of updates, ~2.5% steps
             for i in range(1, n+1):
+                self.logger.debug('Event: activateProgress')
                 self.activateProgress(sm=self, progress=float(i)/float(n))
                 await sleep(float(n)/float(15)) # We assume 15 seconds for now..
         

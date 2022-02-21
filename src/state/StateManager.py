@@ -1,7 +1,7 @@
 from threading import Timer
 from abc import ABC, abstractmethod
 from events import Events
-
+from src.CustomFormatter import CustomFormatter
 
 
 class StateManager(ABC, Events):
@@ -11,6 +11,7 @@ class StateManager(ABC, Events):
         self._stateConfig = stateConfig
         self._state: str = None
         self._timer: Timer = None
+        self.logger = CustomFormatter.getLoggerFor(name=self.__class__.__name__)
     
     @property
     def state(self):
@@ -34,6 +35,7 @@ class StateManager(ABC, Events):
         if not state_to in c['views'].keys():
             raise Exception(f'The state "{state_to}" is not defined.')
 
+        self.logger.debug('Event: beforeInit')
         self.beforeInit(sm=self)
 
         self._unsetTimer()
@@ -55,6 +57,7 @@ class StateManager(ABC, Events):
             tt = timer_trans[0]
             self._setTimer(timeout=float(tt['args']['timeout']))
         
+        self.logger.debug('Event: afterFinalize')
         self.afterFinalize(sm=self)
 
         return self
@@ -64,7 +67,7 @@ class StateManager(ABC, Events):
         Transitions this state machine from an uninitialized state into
         its defined initial state.
         """
-        return self.activate(transition=None)
+        return await self.activate(transition=None)
     
     def availableTransitions(self):
         return list(filter(function=lambda t: t['from']==self.state or t['from']=='*', iterable=self._stateConfig['transitions']))
@@ -87,7 +90,8 @@ class StateManager(ABC, Events):
             raise Exception('The current state "{self._state}" has more than one transition with the name "{transition}".')
 
         trans = transitions[0]
-        return self._initState(state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=trans['args'])
+        return await self._initState(
+            state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=trans['args'])
 
     @abstractmethod
     async def finalize(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
