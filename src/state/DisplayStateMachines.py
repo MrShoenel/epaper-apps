@@ -5,8 +5,7 @@ from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.apps.Datetime import Datetime
 from src.lcd.apps.Progress import Progress
-from threading import Thread
-from asyncio import sleep
+from asyncio import run, sleep
 
 
 
@@ -33,19 +32,18 @@ class ePaperStateMachine(StateManager):
 
         # Now the following will take approx ~15-20 seconds. We will therefore
         # repeatedly trigger the progress event.
-        def progress():
+        async def progress():
             n = 40 # number of updates, ~2.5% steps
             for i in range(1, n+1):
                 self.activateProgress(sm=self, progress=float(i)/float(n))
                 await sleep(float(n)/float(15)) # We assume 15 seconds for now..
-
-        t = Thread(target=progress)
-        t.start()
+        
+        progress_fut = progress()
         
         self._epaper.display(black_img=blackimg, red_img=redimg)
         self._state = state
 
-        t.join()
+        await progress_fut
 
         return self
 
@@ -69,6 +67,11 @@ class TextLcdStateMachine(StateManager):
                 self._apps['show-progress'] = Progress(lcd=self._lcd, strFn=lambda: 'Loading', show_percent='percent' in args, show_dots='dots' in args)
             elif transition.name == 'show-datetime':
                 self._apps['show-datetime'] = Datetime(lcd=self._lcd, mode=args['mode'], l1interval=args['line1_timer'], l2interval=args['line2_timer'])
+    
+    def getApp(self, name: str) -> LcdApp:
+        if name in self._apps.keys():
+            return self[name]
+        raise Exception(f'No app with name "{name}" registered.')
 
     async def finalize(self, state_from: str, transition: str, state_to: str, **kwargs):
         """
