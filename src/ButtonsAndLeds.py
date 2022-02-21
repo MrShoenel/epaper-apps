@@ -44,9 +44,11 @@ class ButtonsAndLeds(Events):
             self.on_button(btn)
         return self
 
-    async def burnLed(self, led: Led):
+    async def burnLed(self, led: Led, burn_for: float=None):
+        duration = burn_for if type(burn_for) is float else led.burn_for
+
         GPIO.output(led.pin, GPIO.HIGH)
-        await asyncio.sleep(delay=led.burn_for)
+        await asyncio.sleep(delay=duration)
         GPIO.output(led.pin, GPIO.LOW)
         return self
     
