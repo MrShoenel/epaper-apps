@@ -1,6 +1,9 @@
+import os
 from PIL import Image
-from src.epd7in5b_V2 import EPD
 from src.CustomFormatter import CustomFormatter
+
+if os.name == 'posix':
+    from src.epd7in5b_V2 import EPD
 
 
 class ePaper():

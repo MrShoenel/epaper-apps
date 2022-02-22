@@ -1,5 +1,10 @@
+import os
 from threading import Semaphore
-from rpi_lcd import LCD
+
+if os.name == 'posix':
+    from rpi_lcd import LCD
+
+
 
 
 

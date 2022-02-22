@@ -9,10 +9,12 @@ from json import dumps, load
 from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
 from src.Api import Api
-from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
 from flask import render_template, request
+
+if os.name == 'posix':
+    from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
 
 
 class Configurator:
