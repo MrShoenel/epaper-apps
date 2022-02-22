@@ -51,7 +51,7 @@ class ScreenshotMaker:
     def screenshot(self, width: int, height: int, url: str) -> [Image.Image, Image.Image]:
         self.setViewportSize(width=width, height=height)
         self.driver.get(url=url)
-        sleep(1.5)
+        sleep(5)
         
         img_bytes = self.driver.get_screenshot_as_png()
         img = Image.open(io.BytesIO(initial_bytes=img_bytes))
