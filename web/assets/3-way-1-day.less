@@ -50,7 +50,7 @@ div#task-list {
 
 
 div#calendar {
-    padding-top: 5px;
+    padding-top: 3px;
     border-top: 1px solid #000;
 
     table {
@@ -65,10 +65,12 @@ div#calendar {
             font-family: 'WenQuanYi Micro Hei';
             font-size: 24px;
             font-weight: 900;
+            padding-bottom: 5px;
 
             &:first-child {
                 width: 16%;
                 font-size: 12px;
+                padding-top: 10px;
             }
 
             &:last-child {
@@ -93,7 +95,7 @@ div#calendar {
 
                 &:first-child {
                     border-right: 1px solid #888;
-                    font-size: 12px;
+                    font-size: 14px;
                     font-weight: 900;
                 }
     
@@ -110,12 +112,13 @@ div#calendar {
                 }
 
                 &.today {
-                    border: 2px solid #555;
+                    outline: 2px solid #555;
+                    outline-offset: -2px;
                     border-radius: 0 !important;
                 }
 
                 &.has-events {
-                    border-radius: 15px;
+                    border-radius: 25px;
                     background-color: #aaa;
 
                     &.before-today, &.other-month {
