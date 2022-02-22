@@ -82,40 +82,6 @@
         await waitForElem('div#calendar');
         await waitForFont('div#calendar');
 
-        const renderTaskList = () => {
-            overdue_undone_tasks.concat(indefinite_tasks).concat(events_of_the_day).forEach(e => {
-                const $div = $('<div/>').addClass('event').css({
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                });
-                
-                const $iconSpan = $('<span/>').addClass('icon');
-                if (e.is_task) {
-                    $iconSpan.addClass('task');
-                } else {
-                    $iconSpan.addClass('event');
-                }
-                $div.append($iconSpan);
-
-                let $span = $('<span/>').addClass('start-time').text(
-                    e.is_indef_task ? 'asap' :
-                        (e.is_overdue_undone_task ? 'overdue' : `${pad10(e.start.hour)}:${pad10(e.start.minute)}`)
-                );
-                if (e.is_indef_task || e.is_overdue_undone_task) {
-                    $span.addClass('urgent');
-                }
-
-                $div.append($span);
-
-                $div.append($('<span/>').text((view_config.tasklist.show_cal_name ? `[${e.cal_name}] ` : '') + e.title));
-
-                $('div#task-list').append($div);
-            });
-        };
-
-        // renderTaskList();
-
         const renderMonthlyCalendar = () => {
             let $tr = $('div#calendar thead tr');
             day_names.forEach(n => $('<td/>').text(n.substring(0, 3)).appendTo($tr));
@@ -163,7 +129,7 @@
                     }
 
                     let $events = $('<div/>').addClass('eventlist').appendTo($div);
-                    for (const e of wd.events.filter(e => !e.is_task)) {
+                    for (const e of wd.events.filter(e => !e.is_task).sort((a, b) => a.start.ts - b.start.ts)) {
                         $events.append($('<div/>').append(
                             $('<span/>').addClass('start-time').text(`${pad10(e.start.hour)}:${pad10(e.start.minute)}`)
                         ).append(
