@@ -1,11 +1,12 @@
 import os
+from src.CustomFormatter import CustomFormatter
 from threading import Semaphore
 
 if os.name == 'posix':
     from rpi_lcd import LCD
 
 
-__semaphore = Semaphore(value=1)
+_semaphore = Semaphore(value=1)
 
 
 
@@ -14,6 +15,7 @@ class TextLCD:
         self.cols = cols
         self.rows = rows
         self._lcd = LCD()
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
     def text(self, line: str, row: int=1):
         """
@@ -21,10 +23,10 @@ class TextLCD:
         never gets messed up.
         """
         if len(line) != self.cols or row < 1 or row > self.rows:
-            raise Exception(f'The line must have an exact length of {self.cols} characters, and the row must >= 1 and <= {self.rows}.')
-        __semaphore.acquire()
+            self.logger.warn(f'The given line does not have a length of {self.cols}, but rather {len(line)}. The row must be >= 1 and <= {self.rows}, it was given as {row}. The line given was: "{line}"')
+        _semaphore.acquire()
         self._lcd.text(line, row)
-        __semaphore.release()
+        _semaphore.release()
 
         return self
     
