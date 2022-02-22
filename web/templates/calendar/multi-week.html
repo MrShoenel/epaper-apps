@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>3-way Calendar View</title>
+    <title>Multi-Week Calendar View</title>
     <link rel="shortcut icon" href="data:" />
     <link rel="stylesheet/less" type="text/css" href="/web/assets/default.less" />
     <link rel="stylesheet/less" type="text/css" href="/web/assets/multi-week.less" />
@@ -53,6 +53,34 @@
             }
             return s;
         };
+
+        const waitForElem = sel => new Promise(async resolve => {
+            while (true) {
+                let e = document.querySelectorAll(sel);
+                if (e.length > 0) {
+                    break;
+                } else {
+                    await timeout(20);
+                }
+            }
+            resolve();
+        });
+
+        const waitForFont = sel => new Promise(async resolve => {
+            while (true) {
+                let s = getComputedStyle(document.querySelector(sel))
+                if (s.fontFamily.toLowerCase().indexOf('wenquan') >= 0) {
+                    break
+                } else {
+                    await timeout(20)
+                }
+            }
+            await timeout(50) // A final timeout to wait for the font to propagate to all other elements.
+            resolve();
+        });
+
+        await waitForElem('div#calendar');
+        await waitForFont('div#calendar');
 
         const renderTaskList = () => {
             overdue_undone_tasks.concat(indefinite_tasks).concat(events_of_the_day).forEach(e => {
