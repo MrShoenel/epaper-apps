@@ -15,13 +15,11 @@ class ePaper():
     @staticmethod
     def display(black_img: Image, red_img):
         e = ePaper()
-        e._display(black_img=black_img, red_img=red_img, clear_before=True, sleep_after=True)
-        
+        e._display(black_img=black_img, red_img=red_img, clear_before=True, sleep_after=False)
+        del e
         return None
     
     def __del__(self):
-        self.epaper.init()
-        self.epaper.Clear()
         self.epaper.sleep()
     
     def _display(self, black_img: Image, red_img: Image, clear_before: bool=False, sleep_after: bool=True):
