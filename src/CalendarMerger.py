@@ -283,12 +283,13 @@ class CalendarMerger:
             # Often, VTODOs don't have a start date.
             # Sometimes, they don't have an end date either,
             # which makes them indefinite.
+            indef_tz = pytz.timezone(cal.tz_indef)
             has_start = type(todo.start) is datetime
             if has_start and todo.start.tzinfo is None:
-                todo.start = todo.start.replace(tzinfo=pytz.timezone(cal.tz_indef))
+                todo.start = indef_tz.localize(todo.start)
             has_end = type(todo.end) is datetime
             if has_end and todo.end.tzinfo is None:
-                todo.end = todo.end.replace(tzinfo=pytz.timezone(cal.tz_indef))
+                todo.end = indef_tz.localize(todo.end)
             
             point: datetime = todo.end if has_end else todo.start
 
