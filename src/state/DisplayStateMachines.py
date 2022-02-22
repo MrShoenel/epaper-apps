@@ -18,7 +18,6 @@ class ePaperStateMachine(StateManager):
     def __init__(self, config):
         super().__init__(config=config, stateConfig=config['state_managers']['epaper'])
         self._config = config
-        self._epaper = ePaper()
 
     def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         # activating a state means to display its rendered images on the e-paper.
@@ -48,8 +47,8 @@ class ePaperStateMachine(StateManager):
             
             progress_thread = Thread(target=progress)
             progress_thread.start()
-            
-            self._epaper.display(black_img=blackimg, red_img=redimg)
+
+            ePaper.display(black_img=blackimg, red_img=redimg)
             self._state = state_to
 
             progress_thread.join()
