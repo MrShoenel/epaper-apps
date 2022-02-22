@@ -23,6 +23,10 @@ div#task-list {
                 background-image: url('/web/assets/event.png');
             }
         }
+
+        span.done-event {
+            text-decoration: line-through;
+        }
     }
 
     span.start-time {
@@ -77,12 +81,15 @@ div#calendar {
                 td:first-child {
                     background-color: #ccc;
                 }
+
+                font-weight: 900;
             }
 
             td {
                 text-align: center;
                 font-size: 16px;
                 padding: 7px 0;
+                font-family: 'WenQuanYi Micro Hei Mono';
 
                 &:first-child {
                     border-right: 1px solid #888;
@@ -94,12 +101,12 @@ div#calendar {
                     color: red;
                 }
 
-                /*&.before-today, */&.other-month {
+                &.before-today, &.other-month {
                     color: #888;
 
-                    &.red {
+                    /*&.red {
                         color:#c00 !important;
-                    }
+                    }*/
                 }
 
                 &.today {

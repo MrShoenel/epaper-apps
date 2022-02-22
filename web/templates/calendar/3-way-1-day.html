@@ -132,12 +132,9 @@
             } else if (e.end === null) {
                 e.end = e.start;
             }
-
-            e.start.abs = e.start.second + e.start.minute * 60 + e.start.hour * 3600;
-            e.end.abs = e.end.second + e.end.minute * 60 + e.end.hour * 3600;
             
             return e;
-        }).sort((a, b) => a.start.abs - b.start.abs);
+        }).sort((a, b) => a.start.ts - b.start.ts);
 
 
         const renderTaskList = () => {
@@ -163,10 +160,14 @@
                 if (e.is_indef_task || e.is_overdue_undone_task) {
                     $span.addClass('urgent');
                 }
-
                 $div.append($span);
 
-                $div.append($('<span/>').text((view_config.tasklist.show_cal_name ? `[${e.cal_name}] ` : '') + e.title));
+                let $titleSpan = $('<span/>').text((view_config.tasklist.show_cal_name ? `[${e.cal_name}] ` : '') + e.title);
+                if (e.end !== null && e.end.ts < time_now.ts) {
+                    $titleSpan.addClass('done-event');
+                }
+
+                $div.append($titleSpan);
 
                 $('div#task-list').append($div);
             });
@@ -294,7 +295,7 @@
                     }
                     // col is not empty, but maybe there's space:
                     const last = col[col.length - 1];
-                    if (last.end.abs < e.start.abs) {
+                    if (last.end.ts < e.start.ts) {
                         return true;
                     }
                     return false;
