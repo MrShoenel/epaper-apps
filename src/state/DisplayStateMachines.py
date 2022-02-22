@@ -39,11 +39,11 @@ class ePaperStateMachine(StateManager):
             # Now the following will take approx ~15-20 seconds. We will therefore
             # repeatedly trigger the progress event.
             def progress():
-                n = 40 # number of updates, ~2.5% steps
+                n = 15
                 for i in range(1, n+1):
                     self.logger.debug('Event: activateProgress')
                     self.activateProgress(sm=self, progress=float(i)/float(n))
-                    sleep(float(n)/float(15)) # We assume 15 seconds for now..
+                    sleep(1.0/float(n)) # We assume 15 seconds for now..
             
             progress_thread = Thread(target=progress)
             progress_thread.start()
