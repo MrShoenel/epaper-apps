@@ -111,14 +111,18 @@ div#calendar {
                     border-radius: 15px;
                     background-color: #aaa;
 
-                    &.red {
-                        background-color: #f44 !important;
-                        color: #fff !important;
-                    }
-
                     &.before-today, &.other-month {
                         background-color: #ccc;
                         color: #555 !important;
+                    }
+
+                    &.red {
+                        background-color: #f44 !important;
+                        color: #fff !important;
+
+                        &.before-today, &.other-month {
+                            color: #ddd !important;
+                        }
                     }
                 }
             }
