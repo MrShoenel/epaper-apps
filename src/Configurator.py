@@ -95,11 +95,10 @@ class Configurator:
         
         def button_callback(btn: Button):
             threads = []
-            futures = []
             # find associated config:
             c = list(filter(lambda conf: btn.name==conf['name'], self.config['inputs']))[0]
             # Check if this button triggers one of the available transitions:
-            at = set(map(lambda trans: trans.name, self.epaperStateMachine.availableTransitions()))
+            at = set(map(lambda trans: trans['name'], self.epaperStateMachine.availableTransitions()))
             common = at.intersection(set(c['transitions']))
             if len(common) == 1:
                 t = Thread(target=lambda: self.epaperStateMachine.activate(transition=list(at)[0]))

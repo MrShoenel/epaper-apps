@@ -46,10 +46,10 @@ class ButtonsAndLeds(Events):
 
     def burnLed(self, led: Led, burn_for: float=None):
         duration = burn_for if type(burn_for) is float else led.burn_for
-        self.logger.debug('Burning LED {led.name} (pin={led.pin}) for {duration} seconds.')
+        self.logger.debug(f'Burning LED {led.name} (pin={led.pin}) for {duration} seconds.')
 
         GPIO.output(led.pin, GPIO.HIGH)
-        sleep(secs=duration)
+        sleep(duration)
         GPIO.output(led.pin, GPIO.LOW)
         return self
     

@@ -21,7 +21,6 @@ class StateManager(ABC, Events):
     def _unsetTimer(self):
         if type(self._timer) is Timer:
             self._timer.cancel()
-            del self._timer
         return self
 
     
@@ -86,8 +85,11 @@ class StateManager(ABC, Events):
             raise Exception('The current state "{self._state}" has more than one transition with the name "{transition}".')
 
         trans = transitions[0]
+        args = {}
+        if 'args' in trans:
+            args = trans['args']
         return self._initState(
-            state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=trans['args'])
+            state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=args)
 
     @abstractmethod
     def finalize(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):

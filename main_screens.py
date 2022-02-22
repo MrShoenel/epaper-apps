@@ -36,4 +36,4 @@ if __name__ == "__main__":
         if os.name == 'nt':
             os.kill(os.getpid(), signal.SIGINT)
         else:
-            os.killpg(os.getpgid(os.getpid()), sig=signal.SIGINT)
+            os.killpg(os.getpgid(os.getpid()), signal.SIGINT)

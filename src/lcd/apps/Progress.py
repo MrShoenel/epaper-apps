@@ -60,4 +60,4 @@ class Progress(LcdApp):
         numUsed = int(ceil(self.progress * 100.0) / pCols)
         arrow = '>' if numUsed < pCols else ''
 
-        return f'[{numUsed * "#"}{arrow}{max(pCols - numUsed - 1, 0) * " "}]'
+        return f'[{numUsed * "="}{arrow}{max(pCols - numUsed - 1, 0) * " "}]'
