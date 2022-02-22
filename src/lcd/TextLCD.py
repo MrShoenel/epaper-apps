@@ -5,6 +5,7 @@ if os.name == 'posix':
     from rpi_lcd import LCD
 
 
+__semaphore = Semaphore(value=1)
 
 
 
@@ -13,10 +14,6 @@ class TextLCD:
         self.cols = cols
         self.rows = rows
         self._lcd = LCD()
-        self._semaphore = Semaphore(value=1)
-
-    def __del__(self):
-        del self._semaphore
     
     def text(self, line: str, row: int=1):
         """
@@ -25,9 +22,9 @@ class TextLCD:
         """
         if len(line) != self.cols or row < 1 or row > self.rows:
             raise Exception(f'The line must have an exact length of {self.cols} characters, and the row must >= 1 and <= {self.rows}.')
-        self._semaphore.acquire()
+        __semaphore.acquire()
         self._lcd.text(line, row)
-        self._semaphore.release()
+        __semaphore.release()
 
         return self
     
