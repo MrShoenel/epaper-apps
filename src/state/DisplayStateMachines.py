@@ -8,8 +8,8 @@ from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.apps.Datetime import Datetime
 from src.lcd.apps.Progress import Progress
-from threading import Thread
 from time import sleep
+from threading import Semaphore
 
 
 
@@ -18,8 +18,11 @@ class ePaperStateMachine(StateManager):
     def __init__(self, config):
         super().__init__(config=config, stateConfig=config['state_managers']['epaper'])
         self._config = config
+        # Used to synchronize state activations, as they are long-running and expensive
+        self._semaphore = Semaphore(1)
 
     def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
+        self._semaphore.acquire()
         # activating a state means to display its rendered images on the e-paper.
         # This happens outside of this application, and we rely on the images
         # being present at this point.
@@ -34,31 +37,29 @@ class ePaperStateMachine(StateManager):
             
             blackimg = Image.open(fp=fp_black)
             redimg = Image.open(fp=fp_red)
-            
 
             # Now the following will take approx ~15-20 seconds. We will therefore
             # repeatedly trigger the progress event.
             def progress():
-                n = 15
+                n = 20
                 for i in range(1, n+1):
                     self.logger.debug('Event: activateProgress')
                     self.activateProgress(sm=self, progress=float(i)/float(n))
                     sleep(1.0/float(n)) # We assume 15 seconds for now..
-            
-            progress_thread = Thread(target=progress)
-            progress_thread.start()
+
+            self._tpe.submit(progress)
 
             ePaper.display(black_img=blackimg, red_img=redimg)
             self._state = state_to
-
-            progress_thread.join()
-            del progress_thread
         finally:
             if not fp_black is None and not fp_black.closed:
                 fp_black.close()
             if not fp_red is None and not fp_red.closed:
                 fp_red.close()
 
+        # Before releasing, wait a few seconds so it won't be triggered too often.
+        sleep(5)
+        self._semaphore.release()
         return self
 
 
