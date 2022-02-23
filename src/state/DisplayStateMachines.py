@@ -86,11 +86,11 @@ class TextLcdStateMachine(StateManager):
         for transition in self._stateConfig['transitions']:
             args = transition['args']
             if transition['name'] == 'show-progress':
-                self._apps['show-progress'] = Progress(
+                self._apps[transition['name']] = Progress(
                     lcd=self._lcd, strFn=lambda: 'Loading',
                     show_percent='percent' in args['indicator'], num_dots=3 if 'dots' in args['indicator'] else 0)
             elif transition['name'] == 'show-datetime':
-                self._apps['show-datetime'] = Datetime(lcd=self._lcd, mode=args['mode'], l1interval=args['line1_timer'], l2interval=args['line2_timer'])
+                self._apps[transition['name']] = Datetime(lcd=self._lcd, mode=args['mode'], l1interval=args['line1_timer'], l2interval=args['line2_timer'], updateInterval=args['update_interval'])
     
     def getApp(self, name: str) -> LcdApp:
         if name in self._apps.keys():
