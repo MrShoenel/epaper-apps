@@ -30,5 +30,7 @@ class TextLCD:
         return self
     
     def clear(self):
+        _semaphore.acquire()
         self._lcd.clear()
+        _semaphore.release()
         return self
