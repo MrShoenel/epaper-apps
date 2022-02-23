@@ -172,7 +172,7 @@ class Configurator:
                 time_now=datetime.now().astimezone(),
                 events_of_the_day=self.calendar.eventsToday() + self.calendar.todosToday(),
                 weekday_events=self.calendar.weekdayItems(num_weeks=num_weeks, start_dt=start_dt),
-                day_names=list(calendar.day_name),
+                day_names=list(map(lambda str: str.capitalize(), calendar.day_name)),
                 view_config=self.config['views']['3-way-1-day'])
         
         self.api.addRoute(route='/calendar/3-way-1-day', fn=render3way1day)
