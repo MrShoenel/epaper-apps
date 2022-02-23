@@ -28,6 +28,9 @@ class Progress(LcdApp):
         self._semaphore.release()
         return self
     
+    def reset(self):
+        return self.progress(value=0.0)
+    
     def start(self):
         self.stop()
         self._semaphore.acquire()

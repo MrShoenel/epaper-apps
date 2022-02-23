@@ -103,10 +103,7 @@ class TextLcdStateMachine(StateManager):
         """
         for app in self._apps.values():
             app.stop()
-        
-        # Should we have a progress app, reset its progress.
-        if 'show-progress' in self._apps.keys():
-            self._apps['show-progress'].progress(0.0)
+            app.reset() # Return app to initial state (if any)
 
         if transition in self._apps.keys():
             self._apps[transition].start()

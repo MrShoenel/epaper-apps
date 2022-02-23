@@ -55,6 +55,9 @@ class Datetime(LcdApp):
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
+    def reset(self):
+        return self # nothing to do here
+    
     def start(self):
         self.stop(clear=True)
 
@@ -62,12 +65,12 @@ class Datetime(LcdApp):
         self._activate = True
 
         def fnTime():
-            cnt = 1
+            cnt = 0
             while self._activate:
                 by = 0
                 if cnt == self._l1every:
                     by = 1
-                    cnt = 1
+                    cnt = 0
 
                 self._lcd.text(line=self._s1Fn(by=by), row=1)
                 # Continue sleeping for as long as this is active
@@ -79,12 +82,12 @@ class Datetime(LcdApp):
 
 
         def fnDate():
-            cnt = 1
+            cnt = 0
             while self._activate:
                 by = 0
                 if cnt == self._l2every:
                     by = 1
-                    cnt = 1
+                    cnt = 0
 
                 self._lcd.text(line=self._s2Fn(by=by), row=2)
                 sleep_partitioned(fn_do_sleep=lambda: self._activate, secs=self._l2interval, by=0.5)

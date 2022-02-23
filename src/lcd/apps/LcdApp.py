@@ -9,3 +9,7 @@ class LcdApp(ABC):
     @abstractmethod
     def stop(self, **kwargs):
         pass
+
+    @abstractmethod
+    def reset(self, **kwargs):
+        pass
