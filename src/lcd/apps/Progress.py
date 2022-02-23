@@ -8,7 +8,7 @@ from src.CustomFormatter import CustomFormatter
 
 
 class Progress(LcdApp):
-    def __init__(self, lcd: TextLCD, strFn: Callable[[], str], show_percent: bool=True, num_dots: int=2):
+    def __init__(self, lcd: TextLCD, strFn: Callable[[], str], show_percent: bool=True, num_dots: int=3):
         self._lcd = lcd
         self.strFn = strFn
         self.show_percent = show_percent

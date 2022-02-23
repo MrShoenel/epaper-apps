@@ -31,7 +31,7 @@ class Datetime(LcdApp):
         
         def dateFn():
             dt = datetime.now()
-            line = f'{pad(dt.day)}.{calendar.month_abbr[dt.month]}+{pad(dt.year)}'
+            line = f'{pad(dt.day)}. {calendar.month_abbr[dt.month].capitalize()} {pad(dt.year)}'
             return line
 
 
