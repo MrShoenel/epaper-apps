@@ -69,7 +69,7 @@ class ButtonsAndLeds(Events):
             f.cancel()
             return f
         else:
-            return self._tpe.submit(temp, self)
+            return self._tpe.submit(temp, duration)
 
     def burnLed(self, led: Led, burn_for: float=None) -> Future:
         def temp():

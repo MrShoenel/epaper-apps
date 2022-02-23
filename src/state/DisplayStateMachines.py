@@ -47,11 +47,11 @@ class ePaperStateMachine(StateManager):
             # Now the following will take approx ~15-30 seconds. We will therefore
             # repeatedly trigger the progress event.
             def progress():
-                n = 30
+                n = 90
                 for i in range(1, n+1):
                     self.logger.debug('Event: activateProgress')
                     self.activateProgress(sm=self, progress=i/n)
-                    sleep(25/float(n)) # We assume 25 seconds
+                    sleep(30/float(n)) # We assume 30 seconds
 
             self._tpe.submit(progress)
 
@@ -64,7 +64,7 @@ class ePaperStateMachine(StateManager):
                 fp_red.close()
 
         # Before releasing, wait a few seconds so it won't be triggered too often.
-        sleep(5)
+        sleep(3)
         self._semaphore.release()
         self._busy = False
         return self
