@@ -1,12 +1,14 @@
+import os
 from src.CustomFormatter import CustomFormatter
 from events import Events
 from typing import Set
 from datetime import datetime
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor, Future
-import RPi.GPIO as GPIO
 import atexit
 
+if os.name == 'posix':
+    import RPi.GPIO as GPIO
 
 
 class Button:
