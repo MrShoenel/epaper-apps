@@ -30,7 +30,7 @@ class ButtonsAndLeds(Events):
         self._buttons: Set[Button] = set()
         self._leds: Set[Led] = set()
         # Used to asynchronously fire buttons, and LEDs
-        self._tpe = ThreadPoolExecutor(max_workers=1)
+        self._tpe = ThreadPoolExecutor(max_workers=2)
 
         atexit.register(self.cleanup)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
@@ -48,6 +48,28 @@ class ButtonsAndLeds(Events):
         btn.last_press = now
 
         return self
+    
+    def blinkLed(self, led: Led, freq: int=10, duration: float=2.0) -> Future:
+        def temp(duration):
+            on = True
+            while duration > 0:
+                cycle = 1.0/freq
+                if on:
+                    GPIO.output(led.pin, GPIO.HIGH)
+                    sleep(cycle)
+                    GPIO.output(led.pin, GPIO.LOW)
+                else:
+                    sleep(cycle)
+                duration -= cycle
+                on = not on
+            GPIO.output(led.pin, GPIO.LOW) # finally
+
+        if self._tpe._shutdown:
+            f = Future()
+            f.cancel()
+            return f
+        else:
+            return self._tpe.submit(temp, self)
 
     def burnLed(self, led: Led, burn_for: float=None) -> Future:
         def temp():
