@@ -21,19 +21,27 @@ class Datetime(LcdApp):
         self._l1interval = l1interval
         self._l2interval = l2interval
 
+        self.scroll = mode == 'bounce'
+
         def timeFn():
             dt = datetime.now()
-            return f'{pad(dt.hour)}:{pad(dt.minute)}:{pad(dt.second)}'
+            line = f'{pad(dt.hour)}:{pad(dt.minute)}:{pad(dt.second)}'
+            if self.scroll:
+                line = ljust(self._lcd.cols)
+            return line
         
         def dateFn():
             dt = datetime.now()
-            return f'{pad(dt.day)}.{calendar.month_abbr[dt.month]}+{pad(dt.year)}'
+            line = f'{pad(dt.day)}.{calendar.month_abbr[dt.month]}+{pad(dt.year)}'
+            if self.scroll:
+                line = ljust(self._lcd.cols)
+            return line
 
 
-        self._s1 = BounceString(strFn=timeFn) if mode == 'bounce' else ScrollString(strFn=timeFn)
-        self._s1Fn = self._s1.bounce if mode == 'bounce' else self._s1.scroll
-        self._s2 = BounceString(strFn=dateFn) if mode == 'bounce' else ScrollString(strFn=dateFn)
-        self._s2Fn = self._s2.bounce if mode == 'bounce' else self._s2.scroll
+        self._s1 = BounceString(strFn=timeFn) if self.scroll else ScrollString(strFn=timeFn)
+        self._s1Fn = self._s1.bounce if self.scroll else self._s1.scroll
+        self._s2 = BounceString(strFn=dateFn) if self.scroll else ScrollString(strFn=dateFn)
+        self._s2Fn = self._s2.bounce if self.scroll else self._s2.scroll
 
         self._activateTimers = False
         self._timerl1: Timer = None
