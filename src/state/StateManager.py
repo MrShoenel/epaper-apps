@@ -14,7 +14,7 @@ class StateManager(ABC, Events):
         self._state: str = None
         self._timer: Timer = None
         # Used to asynchronously fire events
-        self._tpe = ThreadPoolExecutor(max_workers=1)
+        self._tpe = ThreadPoolExecutor(max_workers=4)
         self.logger = CustomFormatter.getLoggerFor(name=self.__class__.__name__)
     
     def __del__(self):

@@ -39,7 +39,7 @@ class Configurator:
             Configurator.GPIO_SET_UP = True
 
         # For async firing of callbacks etc.
-        self._tpe = ThreadPoolExecutor(max_workers=1)
+        self._tpe = ThreadPoolExecutor(max_workers=4)
         atexit.register(lambda: self._tpe.shutdown())
 
         data_folder = config['general']['data_folder'][os.name]

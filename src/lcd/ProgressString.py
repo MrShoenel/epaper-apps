@@ -22,18 +22,21 @@ class ProgressString:
         """
         is_done = 100 == ceil(self.progress * 100)
         fn = self.strFn if not is_done else self.str100pFn
-        line = fn()[0:self.width].ljust(self.width)
+        line = fn()[0:self.width]
         if show_dots and not is_done:
             preserve = self.num_dots + (3 if show_percent else 0) # Percent is 'xx%' (<100)
             self._last_dots %= (self.num_dots + 1)
             line = line[0:(self.width - preserve)] + (self._last_dots * '.').ljust(self.num_dots)
             self._last_dots += 1
+        line = line.ljust(self.width)
         if show_percent:
             p_format = '{:3.0f}%' if is_done else '{:2.0f}%'
             percent = p_format.format(ceil(self.progress * 100))
             if is_done:
                 # Leave a space when 100%
                 line = line[0:(self.width - 5)] + ' '
+            else:
+                line = line.ljust(self.width)[0:(self.width - 3)]
             line += percent
         
         return line
@@ -48,7 +51,7 @@ class ProgressString:
 
 if __name__ == "__main__":
     from time import sleep
-    ps = ProgressString(strFn=lambda: 'Loading Blafoo Baz', str100pFn=lambda: 'Done long Text Bla!')
+    ps = ProgressString(strFn=lambda: 'Loading', str100pFn=lambda: 'Done long Text Bla!')
     
     n = 25
     for i in range(0, n+1):
