@@ -81,6 +81,8 @@ class Datetime(LcdApp):
     
     def writeTime(self):
         self._semaphore.acquire()
+        if not self._activateTimers:
+            return
         self._lcd.text(line=self._s1Fn(), row=1)
         if self._activateTimers:
             self._timerl1 = Timer(interval=self._l1interval, function=self.writeTime)
@@ -90,6 +92,8 @@ class Datetime(LcdApp):
 
     def writeDate(self):
         self._semaphore.acquire()
+        if not self._activateTimers:
+            return
         self._lcd.text(line=self._s2Fn(), row=2)
         if self._activateTimers:
             self._timerl2 = Timer(interval=self._l2interval, function=self.writeDate)

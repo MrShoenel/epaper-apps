@@ -50,6 +50,8 @@ class Progress(LcdApp):
     
     def update(self):
         self._semaphore.acquire()
+        if not self._activateTimers:
+            return self # might have been cancelled in the meantime
         self._lcd.text(line=self._ps.generateProgressText(
             show_dots=self.num_dots > 0, show_percent=self.show_percent), row=1)
         self._lcd.text(line=self._ps.generateProgressBar(), row=2)
