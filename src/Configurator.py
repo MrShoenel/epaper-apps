@@ -1,19 +1,19 @@
 import os
 import logging
-import threading
 import calendar
 import pathlib
 import atexit
-from threading import Thread
+from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from json import dumps, load
 from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
+from src.ButtonsAndLeds import ButtonsAndLeds, Button
 from src.Api import Api
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
-from flask import render_template, request
+from flask import render_template
 
 if os.name == 'posix':
     import RPi.GPIO as GPIO
@@ -112,6 +112,8 @@ class Configurator:
         def button_callback(btn: Button):
             if self.epaperStateMachine.busy:
                 self.logger.debug('The ePaperStateMachine is currently busy. Ignoring button press.')
+                # Flash the red LED for some time
+                self.ctrl.blinkLed(led=leds['led-red'], freq=10, duration=5)
                 return self
 
             # find associated config:

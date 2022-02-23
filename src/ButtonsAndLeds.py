@@ -1,6 +1,6 @@
 from src.CustomFormatter import CustomFormatter
 from events import Events
-from typing import Dict, Set
+from typing import Set
 from datetime import datetime
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor, Future
