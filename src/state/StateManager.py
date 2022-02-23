@@ -2,6 +2,7 @@ from threading import Timer
 from abc import ABC, abstractmethod
 from events import Events
 from src.CustomFormatter import CustomFormatter
+from concurrent.futures import ThreadPoolExecutor
 
 
 class StateManager(ABC, Events):
@@ -12,7 +13,12 @@ class StateManager(ABC, Events):
         self._stateConfig = stateConfig
         self._state: str = None
         self._timer: Timer = None
+        # Used to asynchronously fire events
+        self._tpe = ThreadPoolExecutor(max_workers=1)
         self.logger = CustomFormatter.getLoggerFor(name=self.__class__.__name__)
+    
+    def __del__(self):
+        self._tpe.shutdown()
     
     @property
     def state(self):
@@ -31,7 +37,7 @@ class StateManager(ABC, Events):
     
     def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         self.logger.debug('Event: beforeInit')
-        self.beforeInit(sm=self)
+        self._tpe.submit(lambda: self.beforeInit(sm=self))
 
         self._unsetTimer()
 
@@ -53,7 +59,7 @@ class StateManager(ABC, Events):
             self._setTimer(timeout=float(tt['args']['timeout']))
         
         self.logger.debug('Event: afterFinalize')
-        self.afterFinalize(sm=self)
+        self._tpe.submit(lambda: self.afterFinalize(sm=self))
 
         return self
     
