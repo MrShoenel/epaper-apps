@@ -1,0 +1,45 @@
+---
+title: "Weather graphs"
+output:
+  md_document:
+    toc: yes
+    toc_depth: 6
+    df_print: kable
+    variant: gfm
+  bookdown::pdf_document2:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 6
+    df_print: kable
+    keep_tex: yes
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+    df_print: kable
+  word_document: default
+---
+
+# Read configuration
+
+```{r}
+conf <- rjson::fromJSON(readr::read_file("../../config.json"))
+apiKey <- conf$weather$api_key
+```
+
+
+```{r}
+req <- httr::GET(url=paste0(
+	"https://api.openweathermap.org/data/2.5/onecall?lat=56.8806&lon=14.15292&appid=",
+	apiKey, "&units=metric"))
+data <- rjson::fromJSON(httr::content(req, as="text"))
+```
+
+```{r}
+png(filename = "test.png")
+plot(cars)
+dev.off()
+```
+
