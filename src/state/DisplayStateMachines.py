@@ -38,14 +38,14 @@ class ePaperStateMachine(StateManager):
             blackimg = Image.open(fp=fp_black)
             redimg = Image.open(fp=fp_red)
 
-            # Now the following will take approx ~15-20 seconds. We will therefore
+            # Now the following will take approx ~15-30 seconds. We will therefore
             # repeatedly trigger the progress event.
             def progress():
                 n = 30
                 for i in range(1, n+1):
                     self.logger.debug('Event: activateProgress')
                     self.activateProgress(sm=self, progress=i/n)
-                    sleep(15/float(n)) # We assume 15 seconds
+                    sleep(25/float(n)) # We assume 25 seconds
 
             self._tpe.submit(progress)
 
