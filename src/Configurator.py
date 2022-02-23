@@ -118,7 +118,7 @@ class Configurator:
             if self.epaperStateMachine.busy:
                 self.logger.debug('The ePaperStateMachine is currently busy. Ignoring button press.')
                 # Flash the red LED for some time
-                self.ctrl.blinkLed(led=leds['led-red'], freq=10, duration=5)
+                self.ctrl.blinkLed(led=leds['led-red'], freq=10, duration=3)
                 return self
 
             # find associated config:
