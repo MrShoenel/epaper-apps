@@ -89,12 +89,8 @@ class Configurator:
     def initStateMachines(self):
         self.logger.debug('Initializing state machines.')
 
-        f1 = self._tpe.submit(lambda: self.epaperStateMachine.init())
-        f2 = self._tpe.submit(lambda: self.textLcdStateMachine.init())
-
-        # Wait for them:
-        f1.result()
-        f2.result()
+        self.textLcdStateMachine.init()
+        self.epaperStateMachine.init()
 
         self.logger.debug('Finished initializing state machines.')
         return self

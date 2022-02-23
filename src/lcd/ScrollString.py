@@ -38,9 +38,10 @@ class BounceString:
 
 class ScrollString:
 
-    def __init__(self, strFn: Callable[[], str]):
+    def __init__(self, strFn: Callable[[], str], width: int=16):
         self.fn = strFn
         self.pos = 0
+        self.width = width
     
     def reset(self):
         self.pos = 0
@@ -48,6 +49,8 @@ class ScrollString:
 
     def scroll(self, by = 1):
         s = self.fn()
+        if type(self.width) is int:
+            s = s[0:self.width].ljust(self.width)
         self.pos = self.pos + by
         if self.pos >= len(s):
             self.pos = 0

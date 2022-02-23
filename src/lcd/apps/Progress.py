@@ -15,6 +15,7 @@ class Progress(LcdApp):
         # To synchronize updating both LCD's lines
         self._semaphore = Semaphore(1)
         self._ps = ProgressString(strFn=strFn, num_dots=num_dots)
+        self._activateTimers = False
         self._timer: Timer = None
 
     def progress(self, value: float):
@@ -24,11 +25,13 @@ class Progress(LcdApp):
         return self
     
     def start(self):
-        self._timer = Timer(interval=0.5, function=self.update)
-        self._timer.start()
+        self.stop()
+        self._activateTimers = True
+        self.update()
         return self
     
     def stop(self, clear: bool=False):
+        self._activateTimers = False
         if type(self._timer) is Timer:
             self._timer.cancel()
         if clear:
@@ -41,4 +44,9 @@ class Progress(LcdApp):
             show_dots=self.num_dots > 0, show_percent=self.show_percent), row=1)
         self._lcd.text(line=self._ps.generateProgressBar(), row=2)
         self._semaphore.release()
+
+        if self._activateTimers:
+            self._timer = Timer(interval=0.5, function=self.update)
+            self._timer.start()
+
         return self

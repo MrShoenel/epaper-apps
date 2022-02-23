@@ -26,15 +26,11 @@ class Datetime(LcdApp):
         def timeFn():
             dt = datetime.now()
             line = f'{pad(dt.hour)}:{pad(dt.minute)}:{pad(dt.second)}'
-            if self.scroll:
-                line = ljust(self._lcd.cols)
             return line
         
         def dateFn():
             dt = datetime.now()
             line = f'{pad(dt.day)}.{calendar.month_abbr[dt.month]}+{pad(dt.year)}'
-            if self.scroll:
-                line = ljust(self._lcd.cols)
             return line
 
 
@@ -51,31 +47,37 @@ class Datetime(LcdApp):
         self.stop()
         self._activateTimers = True
 
-        self._s1.reset()
-        self._s2.reset()
+        self.writeTime()
+        self.writeDate()
         
-        self._timerl1 = Timer(interval=self._l1interval, function=self.writeTime)
-        self._timerl2 = Timer(interval=self._l2interval, function=self.writeDate)
-        self._timerl1.start()
-        self._timerl2.start()
-
         return self
     
-    def stop(self):
+    def stop(self, clear: bool=True):
         self._activateTimers = False
         if type(self._timerl1) is Timer:
             self._timerl1.cancel()
         if type(self._timerl2) is Timer:
             self._timerl2.cancel()
         
-        self._lcd.clear()
+        if clear:
+            self._lcd.clear()
+
+        self._s1.reset()
+        self._s2.reset()
         
         return self
     
     def writeTime(self):
         self._lcd.text(line=self._s1Fn(), row=1)
+        if self._activateTimers:
+            self._timerl1 = Timer(interval=self._l1interval, function=self.writeTime)
+            self._timerl1.start()
+
 
     def writeDate(self):
         self._lcd.text(line=self._s2Fn(), row=2)
+        if self._activateTimers:
+            self._timerl2 = Timer(interval=self._l2interval, function=self.writeDate)
+            self._timerl2.start()
 
         
