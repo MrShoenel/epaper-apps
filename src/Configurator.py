@@ -3,6 +3,7 @@ import logging
 import threading
 import calendar
 import pathlib
+import atexit
 from threading import Thread
 from datetime import datetime, timedelta
 from json import dumps, load
@@ -14,7 +15,11 @@ from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachi
 from flask import render_template, request
 
 if os.name == 'posix':
+    import RPi.GPIO as GPIO
     from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
+    atexit.register(lambda: GPIO.cleanup())
+
+    
 
 
 class Configurator:
@@ -23,8 +28,14 @@ class Configurator:
     a config.json and sets up everything accordingly.
     """
 
+    GPIO_SET_UP = False
+
     def __init__(self, config):
         self.config = config
+        if os.name == 'posix' and not Configurator.GPIO_SET_UP:
+            GPIO.setmode(GPIO.BCM) # We do this once application-wide
+            GPIO.setwarnings(True) # Should never be hidden, that'd be stupid
+            Configurator.GPIO_SET_UP = True
         data_folder = config['general']['data_folder'][os.name]
         pathlib.Path(data_folder).mkdir(parents=True, exist_ok=True)
         CustomFormatter.setLevel(level=getattr(logging, config['general']['log_level'], None))

@@ -33,6 +33,9 @@ import os
 import logging
 import sys
 import time
+import spidev
+import RPi.GPIO
+from src.CustomFormatter import CustomFormatter
 
 
 
@@ -42,7 +45,7 @@ import time
 EPD_WIDTH       = 800
 EPD_HEIGHT      = 480
 
-logger = logging.getLogger(__name__)
+logger = CustomFormatter.getLoggerFor(__name__)
 
 class RaspberryPi:
     # Pin definition
@@ -52,9 +55,6 @@ class RaspberryPi:
     BUSY_PIN        = 24
 
     def __init__(self):
-        import spidev
-        import RPi.GPIO
-
         self.GPIO = RPi.GPIO
         self.SPI = spidev.SpiDev()
 
@@ -74,8 +74,9 @@ class RaspberryPi:
         self.SPI.writebytes2(data)
 
     def module_init(self):
-        self.GPIO.setmode(self.GPIO.BCM)
-        self.GPIO.setwarnings(False)
+        # This is done by the configurator now!
+        # self.GPIO.setmode(self.GPIO.BCM)
+        # self.GPIO.setwarnings(False)
         self.GPIO.setup(self.RST_PIN, self.GPIO.OUT)
         self.GPIO.setup(self.DC_PIN, self.GPIO.OUT)
         self.GPIO.setup(self.CS_PIN, self.GPIO.OUT)

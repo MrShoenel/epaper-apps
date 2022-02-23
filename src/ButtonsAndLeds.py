@@ -29,7 +29,6 @@ class ButtonsAndLeds(Events):
         self._buttons: Set[Button] = set()
         self._leds: Set[Led] = set()
 
-        GPIO.setmode(GPIO.BCM)
         atexit.register(self.cleanup)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
