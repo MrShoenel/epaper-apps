@@ -305,7 +305,7 @@
                 const absY = $(`div#hour-${e.start.hour}`).offset().top +
                     e.start.minute / 60 * divHoursHeight;
                 // .. and the height:
-                const absH = e.duration / 3600 * divHoursHeight;
+                const absH = e.duration / 3600 * divHoursHeight - 4; // minus padding
 
 
                 // Append event to column,
