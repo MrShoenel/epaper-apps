@@ -3,6 +3,7 @@ from src.lcd.TextLCD import TextLCD
 from threading import Timer, Semaphore
 from typing import Callable
 from src.lcd.ProgressString import ProgressString
+from src.CustomFormatter import CustomFormatter
 
 
 
@@ -17,6 +18,7 @@ class Progress(LcdApp):
         self._ps = ProgressString(strFn=strFn, num_dots=num_dots)
         self._activateTimers = False
         self._timer: Timer = None
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
     def progress(self, value: float):
         if value < 0.0 or value > 1.0:
@@ -27,11 +29,13 @@ class Progress(LcdApp):
     def start(self):
         self.stop()
         self._activateTimers = True
+        self.logger.debug('Starting app.')
         self.update()
         return self
     
     def stop(self, clear: bool=False):
         self._activateTimers = False
+        self.logger.debug('Stopping app.')
         if type(self._timer) is Timer:
             self._timer.cancel()
         if clear:

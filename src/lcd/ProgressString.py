@@ -22,7 +22,7 @@ class ProgressString:
         """
         is_done = 100 == ceil(self.progress * 100)
         fn = self.strFn if not is_done else self.str100pFn
-        line = fn()[0:self.width]
+        line = fn()[0:self.width].ljust(self.width)
         if show_dots and not is_done:
             preserve = self.num_dots + (3 if show_percent else 0) # Percent is 'xx%' (<100)
             self._last_dots %= (self.num_dots + 1)

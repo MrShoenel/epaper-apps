@@ -5,6 +5,7 @@ from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.ScrollString import BounceString, ScrollString
 from typing import Callable
 from threading import Timer
+from src.CustomFormatter import CustomFormatter
 
 
 def pad(s: str):
@@ -42,18 +43,22 @@ class Datetime(LcdApp):
         self._activateTimers = False
         self._timerl1: Timer = None
         self._timerl2: Timer = None
+
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
     def start(self):
         self.stop()
         self._activateTimers = True
+        self.logger.debug('Starting app.')
 
         self.writeTime()
         self.writeDate()
-        
+
         return self
     
     def stop(self, clear: bool=True):
         self._activateTimers = False
+        self.logger.debug('Stopping app.')
         if type(self._timerl1) is Timer:
             self._timerl1.cancel()
         if type(self._timerl2) is Timer:

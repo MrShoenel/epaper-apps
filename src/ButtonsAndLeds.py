@@ -40,7 +40,7 @@ class ButtonsAndLeds(Events):
 
     def _triggerButton(self, btn: Button):
         now = datetime.now().timestamp()
-        if (now - btn.last_press) > btn.bounce_time:
+        if (now - btn.last_press) > btn.bounce_time and not self._tpe._shutdown:
             def temp():
                 self.logger.debug(f'Button {btn.name} (pin={btn.pin}) was pressed.')
                 self.on_button(btn)
@@ -57,15 +57,20 @@ class ButtonsAndLeds(Events):
             GPIO.output(led.pin, GPIO.HIGH)
             sleep(duration)
             GPIO.output(led.pin, GPIO.LOW)
-
-        return self._tpe.submit(temp)
+        
+        if self._tpe._shutdown:
+            f = Future()
+            f.cancel()
+            return f
+        else:
+            return self._tpe.submit(temp)
     
     def cleanup(self):
         self.logger.debug('Cleaning up registered buttons and LEDs.')
         if len(self._buttons) > 0:
             for btn in self._buttons:
-                GPIO.remove_event_detect(channel=btn.pin)
-                GPIO.cleanup(channel=btn.pin)
+                GPIO.remove_event_detect(btn.pin)
+                GPIO.cleanup(btn.pin)
         if len(self._leds) > 0:
             GPIO.cleanup(list(map(lambda led: led.pin, self._leds)))
         
