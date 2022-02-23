@@ -51,7 +51,7 @@ class Configurator:
         self.logger.debug(f'Read configuration: {dumps(config)}')
         
         # Set locale:
-        locale.setlocale(config['general']['locale'])
+        locale.setlocale(locale.LC_ALL, config['general']['locale'])
         self.logger.debug(f'The current locale is {locale.getlocale()}')
 
         self.api: Api = Api()
