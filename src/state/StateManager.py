@@ -18,6 +18,7 @@ class StateManager(ABC, Events):
         self.logger = CustomFormatter.getLoggerFor(name=self.__class__.__name__)
     
     def __del__(self):
+        self._unsetTimer()
         self._tpe.shutdown()
     
     @property
@@ -33,6 +34,7 @@ class StateManager(ABC, Events):
     def _setTimer(self, timeout: float):
         self._unsetTimer()
         self._timer = Timer(interval=timeout, function=lambda: self.activate(transition='timer'))
+        self._timer.start()
         return self
     
     def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
