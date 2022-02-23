@@ -3,8 +3,7 @@ from datetime import datetime
 from src.lcd.TextLCD import TextLCD
 from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.ScrollString import BounceString, ScrollString
-from typing import Callable
-from threading import Timer
+from threading import Timer, Semaphore
 from src.CustomFormatter import CustomFormatter
 
 
@@ -21,6 +20,8 @@ class Datetime(LcdApp):
         self._lcd = lcd
         self._l1interval = l1interval
         self._l2interval = l2interval
+
+        self._semaphore = Semaphore(1)
 
         self.scroll = mode == 'bounce'
 
@@ -48,8 +49,11 @@ class Datetime(LcdApp):
     
     def start(self):
         self.stop()
+
+        self._semaphore.acquire()
         self._activateTimers = True
         self.logger.debug('Starting app.')
+        self._semaphore.release()
 
         self.writeTime()
         self.writeDate()
@@ -57,6 +61,7 @@ class Datetime(LcdApp):
         return self
     
     def stop(self, clear: bool=True):
+        self._semaphore.acquire()
         self._activateTimers = False
         self.logger.debug('Stopping app.')
         if type(self._timerl1) is Timer:
@@ -69,20 +74,26 @@ class Datetime(LcdApp):
 
         self._s1.reset()
         self._s2.reset()
+
+        self._semaphore.release()
         
         return self
     
     def writeTime(self):
+        self._semaphore.acquire()
         self._lcd.text(line=self._s1Fn(), row=1)
         if self._activateTimers:
             self._timerl1 = Timer(interval=self._l1interval, function=self.writeTime)
             self._timerl1.start()
+        self._semaphore.release()
 
 
     def writeDate(self):
+        self._semaphore.acquire()
         self._lcd.text(line=self._s2Fn(), row=2)
         if self._activateTimers:
             self._timerl2 = Timer(interval=self._l2interval, function=self.writeDate)
             self._timerl2.start()
+        self._semaphore.release()
 
         

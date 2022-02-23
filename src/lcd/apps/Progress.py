@@ -21,25 +21,31 @@ class Progress(LcdApp):
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
     def progress(self, value: float):
+        self._semaphore.acquire()
         if value < 0.0 or value > 1.0:
             raise Exception('progress must be in [0.0, 1.0].')
         self._ps.progress = value
+        self._semaphore.release()
         return self
     
     def start(self):
         self.stop()
+        self._semaphore.acquire()
         self._activateTimers = True
         self.logger.debug('Starting app.')
+        self._semaphore.release()
         self.update()
         return self
     
     def stop(self, clear: bool=False):
+        self._semaphore.acquire()
         self._activateTimers = False
         self.logger.debug('Stopping app.')
         if type(self._timer) is Timer:
             self._timer.cancel()
         if clear:
             self._lcd.clear()
+        self._semaphore.release()
         return self
     
     def update(self):
@@ -47,10 +53,11 @@ class Progress(LcdApp):
         self._lcd.text(line=self._ps.generateProgressText(
             show_dots=self.num_dots > 0, show_percent=self.show_percent), row=1)
         self._lcd.text(line=self._ps.generateProgressBar(), row=2)
-        self._semaphore.release()
 
         if self._activateTimers:
             self._timer = Timer(interval=0.5, function=self.update)
             self._timer.start()
+
+        self._semaphore.release()
 
         return self
