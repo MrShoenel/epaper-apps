@@ -3,6 +3,7 @@ import logging
 import calendar
 import pathlib
 import atexit
+import locale
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -48,6 +49,10 @@ class Configurator:
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
         self.logger.debug(f'Read configuration: {dumps(config)}')
+        
+        # Set locale:
+        locale.setlocale(config['general']['locale'])
+        self.logger.debug(f'The current locale is {locale.getlocale()}')
 
         self.api: Api = Api()
         self.calendar: CalendarMerger = None
