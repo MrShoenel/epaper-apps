@@ -24,11 +24,12 @@ def sleep_partitioned(fn_do_sleep: Callable[[], bool], secs, by=1.0):
 
 
 class Datetime(LcdApp):
-    def __init__(self, lcd: TextLCD, mode: str='bounce', l1interval: float=0.999, l2interval: float=4.75, updateInterval: float=0.999):
+    def __init__(self, lcd: TextLCD, mode: str='bounce', l1interval: float=0.999, l2interval: float=4.75, l1every: int=2, l2every: int=1):
         self._lcd = lcd
         self._l1interval = l1interval
         self._l2interval = l2interval
-        self._updateInterval = updateInterval
+        self._l1every = l1every
+        self._l2every = l2every
         self._semaphore = Semaphore(1)
         
         self.scroll = mode == 'bounce'
@@ -61,19 +62,33 @@ class Datetime(LcdApp):
         self._activate = True
 
         def fnTime():
+            cnt = 1
             while self._activate:
-                self._lcd.text(line=self._s1Fn(), row=1)
+                by = 0
+                if cnt == self._l1every:
+                    by = 1
+                    cnt = 1
+
+                self._lcd.text(line=self._s1Fn(by=by), row=1)
                 # Continue sleeping for as long as this is active
                 sleep_partitioned(fn_do_sleep=lambda: self._activate, secs=self._l1interval, by=0.5)
+                cnt += 1
 
         self._t1 = Thread(target=fnTime)
         self._t1.start()
 
 
         def fnDate():
+            cnt = 1
             while self._activate:
-                self._lcd.text(line=self._s2Fn(), row=2)
+                by = 0
+                if cnt == self._l2every:
+                    by = 1
+                    cnt = 1
+
+                self._lcd.text(line=self._s2Fn(by=by), row=2)
                 sleep_partitioned(fn_do_sleep=lambda: self._activate, secs=self._l2interval, by=0.5)
+                cnt += 1
         
         self._t2 = Thread(target=fnDate)
         self._t2.start()
