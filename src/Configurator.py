@@ -5,6 +5,7 @@ import calendar
 import pathlib
 import atexit
 from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from json import dumps, load
 from src.CustomFormatter import CustomFormatter
@@ -36,6 +37,11 @@ class Configurator:
             GPIO.setmode(GPIO.BCM) # We do this once application-wide
             GPIO.setwarnings(True) # Should never be hidden, that'd be stupid
             Configurator.GPIO_SET_UP = True
+
+        # For async firing of callbacks etc.
+        self._tpe = ThreadPoolExecutor(max_workers=1)
+        atexit.register(lambda: self._tpe.shutdown())
+
         data_folder = config['general']['data_folder'][os.name]
         pathlib.Path(data_folder).mkdir(parents=True, exist_ok=True)
         CustomFormatter.setLevel(level=getattr(logging, config['general']['log_level'], None))
@@ -83,14 +89,12 @@ class Configurator:
     def initStateMachines(self):
         self.logger.debug('Initializing state machines.')
 
-        t1 = Thread(target=lambda: self.epaperStateMachine.init())
-        t2 = Thread(target=lambda: self.textLcdStateMachine.init())
-        
-        t1.start()
-        t2.start()
+        f1 = self._tpe.submit(lambda: self.epaperStateMachine.init())
+        f2 = self._tpe.submit(lambda: self.textLcdStateMachine.init())
 
-        t1.join()
-        t2.join()
+        # Wait for them:
+        f1.result()
+        f2.result()
 
         self.logger.debug('Finished initializing state machines.')
         return self
@@ -107,27 +111,24 @@ class Configurator:
             leds[c['name']] = ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
         
         def button_callback(btn: Button):
-            threads = []
             # find associated config:
             c = list(filter(lambda conf: btn.name==conf['name'], self.config['inputs']))[0]
             # Check if this button triggers one of the available transitions:
             at = set(map(lambda trans: trans['name'], self.epaperStateMachine.availableTransitions()))
             common = at.intersection(set(c['transitions']))
             if len(common) == 1:
-                t = Thread(target=lambda: self.epaperStateMachine.activate(transition=list(at)[0]))
-                t.start()
-                threads.append(t)
+                # We will not wait for it, nor are we interested in the result.
+                # Activating an e-paper state takes a long time and is a synchronized method.
+                self._tpe.submit(lambda: self.epaperStateMachine.activate(transition=list(at)[0]))
             
             # let's also check if this button press has an output action:
             if 'output' in c and c['output']['name'] in leds.keys():
                 led = leds[c['output']['name']]
-                t = Thread(target=lambda: ctrl.burnLed(led=led, burn_for=c['output']['duration']))
-                t.start()
-                threads.append(t)
+                # We will not wait for this to be finished, either
+                ctrl.burnLed(led=led, burn_for=c['output']['duration'])
 
-            for thread in threads:
-                thread.join()
-
+        # Note that these callbacks are fired in an extra thread already
+        # by the ButtonAndLeds instance.
         ctrl.on_button += button_callback
     
     def setupCalendar(self):
