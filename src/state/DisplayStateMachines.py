@@ -19,9 +19,15 @@ class ePaperStateMachine(StateManager):
         super().__init__(config=config, stateConfig=config['state_managers']['epaper'])
         self._config = config
         # Used to synchronize state activations, as they are long-running and expensive
+        self._busy = False
         self._semaphore = Semaphore(1)
+    
+    @property
+    def busy(self) -> bool:
+        return self._busy
 
     def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
+        self._busy = True
         self._semaphore.acquire()
         # activating a state means to display its rendered images on the e-paper.
         # This happens outside of this application, and we rely on the images
@@ -60,6 +66,7 @@ class ePaperStateMachine(StateManager):
         # Before releasing, wait a few seconds so it won't be triggered too often.
         sleep(5)
         self._semaphore.release()
+        self._busy = False
         return self
 
 

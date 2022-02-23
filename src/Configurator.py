@@ -110,6 +110,10 @@ class Configurator:
             leds[c['name']] = self.ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
         
         def button_callback(btn: Button):
+            if self.epaperStateMachine.busy:
+                self.logger.debug('The ePaperStateMachine is currently busy. Ignoring button press.')
+                return self
+
             # find associated config:
             c = list(filter(lambda conf: btn.name==conf['name'], self.config['inputs']))[0]
             # Check if this button triggers one of the available transitions:
