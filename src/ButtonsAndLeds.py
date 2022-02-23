@@ -30,7 +30,7 @@ class ButtonsAndLeds(Events):
         self._buttons: Set[Button] = set()
         self._leds: Set[Led] = set()
         # Used to asynchronously fire buttons, and LEDs
-        self._tpe = ThreadPoolExecutor(max_workers=4)
+        self._tpe = ThreadPoolExecutor(max_workers=1)
 
         atexit.register(self.cleanup)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
@@ -77,7 +77,7 @@ class ButtonsAndLeds(Events):
         self._buttons.clear()
         self._leds.clear()
 
-        # self._tpe.shutdown()
+        self._tpe.shutdown()
 
         return self
 

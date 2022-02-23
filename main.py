@@ -1,9 +1,11 @@
+import os
 from src.Configurator import Configurator
 
 
 c = Configurator.fromJson(path='config.json')
 c.setupCalendar()
 c.setupStateMachines()
-c.setupBtnLedControl()
-c.startApi(blocking=False)
-c.initStateMachines()
+if os.name == 'posix':
+    c.initStateMachines()
+    c.setupBtnLedControl()
+c.startApi(blocking=True) # If this is not blocking, the 'c' object will be collected!

@@ -2,9 +2,6 @@ import os
 from src.CustomFormatter import CustomFormatter
 from threading import Semaphore
 
-if os.name == 'posix':
-    from rpi_lcd import LCD
-
 
 _semaphore = Semaphore(value=1)
 
@@ -14,7 +11,9 @@ class TextLCD:
     def __init__(self, cols: int=16, rows: int=2):
         self.cols = cols
         self.rows = rows
-        self._lcd = LCD()
+        if os.name == 'posix':
+            from rpi_lcd import LCD
+            self._lcd = LCD()
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
     def text(self, line: str, row: int=1):

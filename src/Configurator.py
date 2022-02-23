@@ -39,7 +39,7 @@ class Configurator:
             Configurator.GPIO_SET_UP = True
 
         # For async firing of callbacks etc.
-        self._tpe = ThreadPoolExecutor(max_workers=4)
+        self._tpe = ThreadPoolExecutor(max_workers=1)
         atexit.register(lambda: self._tpe.shutdown())
 
         data_folder = config['general']['data_folder'][os.name]
@@ -54,6 +54,7 @@ class Configurator:
         self.epaperStateMachine: ePaperStateMachine = None
         self.hasTextLcd: bool = False
         self.textLcdStateMachine: TextLcdStateMachine = None
+        self.ctrl: ButtonsAndLeds = None
     
 
     def fromJson(path: str='config.json'):
@@ -83,8 +84,10 @@ class Configurator:
             self.epaperStateMachine.beforeInit += lambda sm: self.textLcdStateMachine.activate(transition='show-progress')
             self.epaperStateMachine.afterFinalize += lambda sm: self.textLcdStateMachine.activate(transition='show-datetime')
             def activationProgress(sm: StateManager, progress: float):
-                self.textLcdStateMachine.getApp('show-progress').progress = progress
+                self.textLcdStateMachine.getApp('show-progress').progress(progress)
             self.epaperStateMachine.activateProgress += activationProgress
+        
+        return self
 
     def initStateMachines(self):
         self.logger.debug('Initializing state machines.')
@@ -97,14 +100,14 @@ class Configurator:
 
     def setupBtnLedControl(self):
         self.logger.info('Setting up Button- and Led controls.')
-        ctrl = ButtonsAndLeds()
+        self.ctrl = ButtonsAndLeds()
 
         for c in self.config['inputs']:
-            ctrl.addButton(pin=c['pin'], name=c['name'], bounce_time=c['bounce_time'])
+            self.ctrl.addButton(pin=c['pin'], name=c['name'], bounce_time=c['bounce_time'])
         
         leds: Dict[str, Led] = {}
         for c in self.config['outputs']:
-            leds[c['name']] = ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
+            leds[c['name']] = self.ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
         
         def button_callback(btn: Button):
             # find associated config:
@@ -121,11 +124,13 @@ class Configurator:
             if 'output' in c and c['output']['name'] in leds.keys():
                 led = leds[c['output']['name']]
                 # We will not wait for this to be finished, either
-                ctrl.burnLed(led=led, burn_for=c['output']['duration'])
+                self.ctrl.burnLed(led=led, burn_for=c['output']['duration'])
 
         # Note that these callbacks are fired in an extra thread already
         # by the ButtonAndLeds instance.
-        ctrl.on_button += button_callback
+        self.ctrl.on_button += button_callback
+
+        return self
     
     def setupCalendar(self):
         self.calendar = CalendarMerger(cal_config=self.config['calendar'])
