@@ -3,6 +3,7 @@ from events import Events
 from typing import Dict, Set
 from datetime import datetime
 from time import sleep
+from concurrent.futures import ThreadPoolExecutor, Future
 import RPi.GPIO as GPIO
 import atexit
 
@@ -28,6 +29,8 @@ class ButtonsAndLeds(Events):
         super().__init__(events=('on_button', ))
         self._buttons: Set[Button] = set()
         self._leds: Set[Led] = set()
+        # Used to asynchronously fire buttons, and LEDs
+        self._tpe = ThreadPoolExecutor(max_workers=1)
 
         atexit.register(self.cleanup)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
@@ -38,26 +41,38 @@ class ButtonsAndLeds(Events):
     def _triggerButton(self, btn: Button):
         now = datetime.now().timestamp()
         if (now - btn.last_press) > btn.bounce_time:
-            self.logger.debug(f'Button {btn.name} (pin={btn.pin}) was pressed.')
-            btn.last_press = now
-            self.on_button(btn)
+            def temp():
+                self.logger.debug(f'Button {btn.name} (pin={btn.pin}) was pressed.')
+                self.on_button(btn)
+            self._tpe.submit(temp)
+        btn.last_press = now
+
         return self
 
-    def burnLed(self, led: Led, burn_for: float=None):
-        duration = burn_for if type(burn_for) is float else led.burn_for
-        self.logger.debug(f'Burning LED {led.name} (pin={led.pin}) for {duration} seconds.')
+    def burnLed(self, led: Led, burn_for: float=None) -> Future:
+        def temp():
+            duration = burn_for if type(burn_for) is float else led.burn_for
+            self.logger.debug(f'Burning LED {led.name} (pin={led.pin}) for {duration} seconds.')
 
-        GPIO.output(led.pin, GPIO.HIGH)
-        sleep(duration)
-        GPIO.output(led.pin, GPIO.LOW)
-        return self
+            GPIO.output(led.pin, GPIO.HIGH)
+            sleep(duration)
+            GPIO.output(led.pin, GPIO.LOW)
+
+        return self._tpe.submit(temp)
     
     def cleanup(self):
         self.logger.debug('Cleaning up registered buttons and LEDs.')
         if len(self._buttons) > 0:
-            GPIO.cleanup(list(map(lambda btn: btn.pin, self._buttons)))
+            for btn in self._buttons:
+                GPIO.remove_event_detect(channel=btn.pin)
+                GPIO.cleanup(channel=btn.pin)
         if len(self._leds) > 0:
             GPIO.cleanup(list(map(lambda led: led.pin, self._leds)))
+        
+        self._buttons.clear()
+        self._leds.clear()
+
+        self._tpe.shutdown()
 
         return self
 
