@@ -3,6 +3,11 @@ div#task-list {
     padding: 2px 0 .5ex .5ex;
     overflow: hidden;
 
+    &:empty {
+        padding: 0 !important;
+        background-color: #eee !important;
+    }
+
     div.event {
         margin-bottom: .5ex;
         line-height: 20px;
