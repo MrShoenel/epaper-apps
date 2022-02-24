@@ -30,7 +30,8 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
     @staticmethod
-    def setLevel(level: int=logging.INFO):
+    def setLevel(level: int=logging.DEBUG):
+        logging.getLogger().setLevel(level=level)
         CustomFormatter.use_log_level = level
 
     @staticmethod
