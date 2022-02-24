@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 from src.CustomFormatter import CustomFormatter
 from threading import Semaphore
 
@@ -14,13 +15,23 @@ class TextLCD:
         if os.name == 'posix':
             from rpi_lcd import LCD
             self._lcd = LCD()
+        self._last_lines: Dict[int, str] = {}
+        for i in range(1, rows + 1):
+            self._last_lines[i] = ''
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
-    def text(self, line: str, row: int=1):
+    def text(self, line: str, row: int=1, force_rewrite: bool=False):
         """
         This method is thread-safe, such that the text on the LCD
         never gets messed up.
+        Also, the line is not necessarily written to the LCD if it
+        was previously buffered and force_rewrite is False.
         """
+        if not force_rewrite and self._last_lines[row] == line:
+            return self
+        else:
+            self._last_lines[row] = line
+
         if len(line) != self.cols or row < 1 or row > self.rows:
             self.logger.warn(f'The given line does not have a length of {self.cols}, but rather {len(line)}. The row must be >= 1 and <= {self.rows}, it was given as {row}. The line given was: "{line}"')
         _semaphore.acquire()
