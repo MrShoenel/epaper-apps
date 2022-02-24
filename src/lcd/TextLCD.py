@@ -34,6 +34,7 @@ class TextLCD:
 
         if len(line) != self.cols or row < 1 or row > self.rows:
             self.logger.warn(f'The given line does not have a length of {self.cols}, but rather {len(line)}. The row must be >= 1 and <= {self.rows}, it was given as {row}. The line given was: "{line}"')
+            line = line.ljust(self.cols)[0:self.cols]
         _semaphore.acquire()
         self._lcd.text(line, row)
         _semaphore.release()
