@@ -42,6 +42,7 @@ class CustomFormatter(logging.Formatter):
             consHand.setFormatter(CustomFormatter())
             CustomFormatter.handler = consHand
 
+        CustomFormatter.handler.setLevel(level=CustomFormatter.use_log_level)
         logger = logging.getLogger(name=name)
         logger.addHandler(CustomFormatter.handler)
         logger.setLevel(level=CustomFormatter.use_log_level)
