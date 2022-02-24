@@ -9,6 +9,9 @@ from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.apps.Datetime import Datetime
 from src.lcd.apps.Progress import Progress
+from collections import deque
+from typing import Dict
+from statistics import mean
 from timeit import default_timer as timer
 from time import sleep
 from threading import Semaphore
@@ -20,13 +23,23 @@ class ePaperStateMachine(StateManager):
     def __init__(self, config):
         super().__init__(config=config, stateConfig=config['state_managers']['epaper'])
         self._config = config
+        self._retries = self._stateConfig['retries']['num']
+        self._retry_delay = self._stateConfig['retries']['delay']
         # Used to synchronize state activations, as they are long-running and expensive
         self._busy = False
         self._semaphore_finalize = Semaphore(1)
+        self._last_durations: Dict[str, deque] = {}
     
     @property
     def busy(self) -> bool:
         return self._busy
+    
+    @property
+    def lastDuration(self, image: str) -> float:
+        q = self._last_durations[image]
+        if len(q) == 0:
+            return 30.0 # The default duration if we don't know so far
+        return mean(list(q))
 
     def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         self._busy = True
@@ -46,31 +59,51 @@ class ePaperStateMachine(StateManager):
             blackimg = Image.open(fp=fp_black)
             redimg = Image.open(fp=fp_red)
 
-            # Now the following will take approx ~15-30 seconds. We will therefore
+            # Now the following will take approx ~15-45 seconds. We will therefore
             # repeatedly trigger the progress event.
+            done = False
             def progress():
-                n = 90
+                n = 100
                 for i in range(1, n+1):
-                    self.logger.debug('Event: activateProgress')
-                    self.activateProgress(sm=self, progress=i/n)
-                    sleep(30/float(n)) # We assume 30 seconds
+                    if done:
+                        break
+                    # self.logger.debug(f'Event: activateProgress ({i/n})')
+                    self.activateProgress(sm=self, state_from=state_from, state_to=state_to, transition=transition, progress=i/n)
+                    sleep((self.lastDuration + 3.0)/n)
 
             self._tpe.submit(progress)
             self.logger.debug('Writing black and red image to e-paper.')
-            start_write = timer()
-            ePaper.display(black_img=blackimg, red_img=redimg)
-            self._state = state_to
-            self.logger.debug(f'Writing took {timedelta(seconds=timer()-start_write)}')
+
+            retries = self._retries
+            while retries >= 0:
+                try:
+                    start_write = timer()
+                    ePaper.display(black_img=blackimg, red_img=redimg)
+
+                    duration = timer() - start_write
+                    self._last_durations[state_to].append(duration)
+                    self.logger.debug(f'Writing took {format(timedelta(seconds=duration), "{:.2f}")} seconds.')
+                    self._state = state_to
+                    break
+                except Exception as e:
+                    retries -= 1
+                    if retries < 0:
+                        self.logger.error(f'ePaper::display errored after {self._retries + 1} attempt(s) to display an image. The exception was: {str(e)}')
+                        raise e # re-throw
+                    self.logger.debug(f'ePaper::display had an exception, trying again in {format(self._retry_delay, "{:.2f}")} seconds. Exception was: {str(e)}')
+                    sleep(self._retry_delay)
+                finally:
+                    done = True
         finally:
             if not fp_black is None and not fp_black.closed:
                 fp_black.close()
             if not fp_red is None and not fp_red.closed:
                 fp_red.close()
+            self._semaphore_finalize.release()
+            self._busy = False
 
         # Before releasing, wait a few seconds so it won't be triggered too often.
-        sleep(3)
-        self._semaphore_finalize.release()
-        self._busy = False
+        sleep(3.0)
         return self
 
 
