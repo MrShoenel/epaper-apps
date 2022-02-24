@@ -1,3 +1,4 @@
+from datetime import timedelta
 from src.state.StateManager import StateManager
 from src.ePaper import ePaper
 from src.lcd.TextLCD import TextLCD
@@ -8,6 +9,7 @@ from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.apps.Datetime import Datetime
 from src.lcd.apps.Progress import Progress
+from timeit import default_timer as timer
 from time import sleep
 from threading import Semaphore
 
@@ -20,7 +22,7 @@ class ePaperStateMachine(StateManager):
         self._config = config
         # Used to synchronize state activations, as they are long-running and expensive
         self._busy = False
-        self._semaphore = Semaphore(1)
+        self._semaphore_finalize = Semaphore(1)
     
     @property
     def busy(self) -> bool:
@@ -28,7 +30,7 @@ class ePaperStateMachine(StateManager):
 
     def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         self._busy = True
-        self._semaphore.acquire()
+        self._semaphore_finalize.acquire()
         # activating a state means to display its rendered images on the e-paper.
         # This happens outside of this application, and we rely on the images
         # being present at this point.
@@ -54,9 +56,11 @@ class ePaperStateMachine(StateManager):
                     sleep(30/float(n)) # We assume 30 seconds
 
             self._tpe.submit(progress)
-
+            self.logger.debug('Writing black and red image to e-paper.')
+            start_write = timer()
             ePaper.display(black_img=blackimg, red_img=redimg)
             self._state = state_to
+            self.logger.debug(f'Writing took {timedelta(seconds=timer()-start_write)}')
         finally:
             if not fp_black is None and not fp_black.closed:
                 fp_black.close()
@@ -65,7 +69,7 @@ class ePaperStateMachine(StateManager):
 
         # Before releasing, wait a few seconds so it won't be triggered too often.
         sleep(3)
-        self._semaphore.release()
+        self._semaphore_finalize.release()
         self._busy = False
         return self
 
@@ -101,11 +105,13 @@ class TextLcdStateMachine(StateManager):
         """
         Here we'll just activate the correct app.
         """
+        self.logger.debug('Stopping all apps.')
         for app in self._apps.values():
             app.stop()
             app.reset() # Return app to initial state (if any)
 
         if transition in self._apps.keys():
+            self.logger.debug(f'Starting app: {transition}')
             self._apps[transition].start()
         
         return self
