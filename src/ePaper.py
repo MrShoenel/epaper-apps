@@ -36,7 +36,7 @@ class ePaper():
                 self.logger.warning('Forceful interruption of e-paper incurred an exception: ' + str(e))
                 had_ex = True
             if not had_ex:
-                self.logger.debug('Forceful interruption of e-paper did NOT incur an exception.')
+                self.logger.debug('Forceful interruption of e-paper did NOT incur an immediate exception.')
         
         timer: Timer = None
         if type(cancel_after) is float and cancel_after > 0:
@@ -64,6 +64,7 @@ class ePaper():
                 self.epaper.sleep()
         except Exception as e:
             self.logger.warning('Attempting to display an image on the e-paper triggered an exception: ' + str(e))
+            raise e # re-throw this because it must be handled up the chain!
         finally:
             if type(timer) is Timer and timer.is_alive():
                 timer.cancel()
