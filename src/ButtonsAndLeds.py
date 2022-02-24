@@ -128,6 +128,22 @@ class ButtonsAndLeds(Events):
         self._leds.add(led)
 
         return led
+    
+    def getLed(self, pin: int=None, name: str=None) -> Led:
+        if pin is None and name is None:
+            raise Exception('Must get LED by pin or name.')
+        
+        lmbda = None
+        if type(pin) is int:
+            lmbda = lambda led: led.pin == pin
+        else:
+            lmbda = lambda led: led.name == name
+        
+        temp = list(filter(lmbda, self._leds))
+        if len(temp) != 1:
+            raise Exception(f'Found {len(temp)} LEDs, this method must return only 1.')
+        
+        return temp[0]
 
 
 if __name__ == "__main__":
