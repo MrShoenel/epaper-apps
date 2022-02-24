@@ -55,7 +55,10 @@ class ePaper():
             self.epaper.display(
                 imageblack=self.epaper.getbuffer(black_img),
                 imagered=self.epaper.getbuffer(red_img))
-            
+
+            if type(timer) is Timer and timer.is_alive():
+                timer.cancel()
+
             if sleep_after:
                 self.logger.debug('Sending e-paper display to sleep.')
                 self.epaper.sleep()
