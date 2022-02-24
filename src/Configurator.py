@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from json import dumps, load
 from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
-from src.ButtonsAndLeds import ButtonsAndLeds, Button
+from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
 from src.Api import Api
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
@@ -84,15 +84,51 @@ class Configurator:
             self.hasTextLcd = True
             self.textLcdStateMachine = TextLcdStateMachine(config=self.config)
 
+            # We'll register our own callback for general actions, whenever there is
+            # a transition.
+            self.epaperStateMachine.beforeInit += self.beforeInitCallback
+
             # The LCD is controlled solely by the e-paper, as it depends on
             # the actions applicable to it. So we'll set up the hooks here.
-            self.epaperStateMachine.beforeInit += lambda sm: self.textLcdStateMachine.activate(transition='show-progress')
-            self.epaperStateMachine.afterFinalize += lambda sm: self.textLcdStateMachine.activate(transition='show-datetime')
-            def activationProgress(sm: StateManager, progress: float):
+            self.epaperStateMachine.beforeInit += lambda **kwargs: self.textLcdStateMachine.activate(transition='show-progress')
+            self.epaperStateMachine.afterFinalize += lambda **kwargs: self.textLcdStateMachine.activate(transition='show-datetime')
+            def activationProgress(progress: float, **kwargs):
                 self.textLcdStateMachine.getApp('show-progress').progress(progress)
             self.epaperStateMachine.activateProgress += activationProgress
         
         return self
+    
+    def beforeInitCallback(self, sm: StateManager, state_from: str, state_to: str, transition: str, **kwargs):
+        """
+        In this method we will check if there are actions associated with
+        the transition in question. All actions will be triggered in series.
+        """
+        conf = self.config['state_managers']['epaper']
+
+        # First we need to find the transition that is currently triggered.
+        trans = list(filter(lambda trans: trans['from'] == state_from and trans['to'] == state_to and trans['name'] == transition, conf['transitions']))
+        if len(trans) != 1:
+            raise Exception('Cannot identify the correct transition.')
+        
+        for action_name in trans['actions']:
+            actions = list(filter(lambda a: a['name'] == action_name, conf['actions']))
+            if len(actions) == 1:
+                action = actions[0]
+                outputs = list(filter(lambda outp: outp['name'] == action['use_output'], self.config['outputs']))
+                if len(outputs) == 0:
+                    continue
+
+                args = action['args']
+                led = self.ctrl.getLed(name=action['use_output'])
+                duration = self.epaperStateMachine.lastDuration
+                if type(args['duration']) is float:
+                    duration = args['duration']
+                if args['activity'] == 'burn':
+                    self.logger.debug(f'Triggering action "burn" for {led.name} for a duration of {format(duration, "{:.2f}")} seconds.')
+                    self._tpe.submit(lambda: self.ctrl.burnLed(led=led, burn_for=duration))
+                elif args['activity'] == 'blink':
+                    self.logger.debug(f'Triggering action "blink" for {led.name} for a duration of {format(duration, "{:.2f}")} seconds with a frequency of {args["freq"]} Hz.')
+                    self._tpe.submit(lambda: self.ctrl.blinkLed(led=led, duration=duration, freq=args['freq']))
 
     def initStateMachines(self):
         self.logger.debug('Initializing state machines.')
