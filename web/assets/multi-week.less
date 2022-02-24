@@ -82,6 +82,10 @@ div#calendar {
                             &.today {
                                 border-radius: 0 !important;
                                 width: calc(100% - 5px);
+
+                                &:not(.has-events) {
+                                    font-size: 32px;
+                                }
                             }
 
                             &.has-events {
