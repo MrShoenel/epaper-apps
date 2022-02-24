@@ -16,7 +16,7 @@ class StateManager(ABC, Events):
         self._semaphore = Semaphore(1)
         # Used to asynchronously fire events
         self._tpe = ThreadPoolExecutor(max_workers=1)
-        self.logger = CustomFormatter.getLoggerFor(name=StateManager.__name__)
+        self.logger = CustomFormatter.getLoggerFor(name=self.__class__.__name__)
     
     def __del__(self):
         self._unsetTimer()
@@ -41,12 +41,12 @@ class StateManager(ABC, Events):
     def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         self._semaphore.acquire()
         self.logger.debug('Firing event: beforeInit')
-        self._tpe.submit(lambda: self.beforeInit(sm=self))
+        self._tpe.submit(lambda: self.beforeInit(sm=self, state_from=state_from, state_to=state_to, transition=transition))
 
         self._unsetTimer()
 
         # Now wait for the user implementation (init logic of the transition-into state):
-        self.logger.debug(f'Attempting finalization of state:{state_to}')
+        self.logger.debug(f'Attempting finalization of state :{state_to}')
         try:
             self.finalize(state_from=state_from, transition=transition, state_to=state_to, kwargs=kwargs)
             # Now if this was successful, replace the current state:
@@ -65,9 +65,9 @@ class StateManager(ABC, Events):
                 self._setTimer(timeout=float(tt['args']['timeout']))
             
             self.logger.debug('Firing event: afterFinalize')
-            self._tpe.submit(lambda: self.afterFinalize(sm=self))
+            self._tpe.submit(lambda: self.afterFinalize(sm=self, state_from=state_from, state_to=state_to, transition=transition))
         except Exception as e:
-            self.logger.error(f'Exception occurred: {str(e)}')
+            self.logger.error(f'Exception occurred, cannot finalize state {state_to}: {str(e)}')
             raise e # re-throw; 'finally' will still be run
         finally:
             self._semaphore.release()
