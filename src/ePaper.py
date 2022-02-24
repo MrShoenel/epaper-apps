@@ -1,9 +1,10 @@
 import os
 from PIL import Image
 from src.CustomFormatter import CustomFormatter
+from threading import Timer
 
 if os.name == 'posix':
-    from src.epd7in5b_V2 import EPD
+    from src.epd7in5b_V2 import EPD, epdconfig
 
 
 class ePaper():
@@ -20,24 +21,50 @@ class ePaper():
         return None
     
     def __del__(self):
-        self.epaper.sleep()
-    
-    def _display(self, black_img: Image, red_img: Image, clear_before: bool=False, sleep_after: bool=True):
-        was_inited = self._inited
-        if not self._inited:
-            self.epaper.init()
-            self._inited = True
-        
-        if not was_inited or clear_before:
-            self.epaper.Clear()
-        
-        self.epaper.display(
-            imageblack=self.epaper.getbuffer(black_img),
-            imagered=self.epaper.getbuffer(red_img))
-        
-        if sleep_after:
-            self.logger.debug('Sending e-paper display to sleep.')
+        try:
             self.epaper.sleep()
+        except Exception as e:
+            self.logger.warning(f'The e-paper had an exception while attempting to sleep: ' + str(e))
+    
+    def _display(self, black_img: Image, red_img: Image, clear_before: bool=False, sleep_after: bool=True, cancel_after: float=60.0):
+        def interrupt():
+            self.logger.debug('Forcefully interrupting the e-paper.')
+            had_ex = False
+            try:
+                epdconfig.module_exit()
+            except Exception as e:
+                self.logger.warning('Forceful interruption of e-paper incurred an exception: ' + str(e))
+                had_ex = True
+            if not had_ex:
+                self.logger.debug('Forceful interruption of e-paper did NOT incur an exception.')
+        
+        timer: Timer = None
+        if type(cancel_after) is float and cancel_after > 0:
+            timer = Timer(interval=cancel_after, function=interrupt)
+            timer.start()
+
+        try:
+            was_inited = self._inited
+            if not self._inited:
+                self.epaper.init()
+                self._inited = True
+            
+            if not was_inited or clear_before:
+                self.epaper.Clear()
+            
+            self.epaper.display(
+                imageblack=self.epaper.getbuffer(black_img),
+                imagered=self.epaper.getbuffer(red_img))
+            
+            if sleep_after:
+                self.logger.debug('Sending e-paper display to sleep.')
+                self.epaper.sleep()
+        except Exception as e:
+            self.logger.warning('Attempting to display an image on the e-paper triggered an exception: ' + str(e))
+        finally:
+            if type(timer) is Timer and timer.is_alive():
+                timer.cancel()
+
         
         return self
     
