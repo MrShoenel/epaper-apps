@@ -46,7 +46,7 @@ class StateManager(ABC, Events):
         self._unsetTimer()
 
         # Now wait for the user implementation (init logic of the transition-into state):
-        self.logger.debug(f'Attempting finalization of state :{state_to}')
+        self.logger.debug(f'Attempting finalization of state: {state_to}')
         try:
             self.finalize(state_from=state_from, transition=transition, state_to=state_to, kwargs=kwargs)
             # Now if this was successful, replace the current state:
@@ -117,6 +117,3 @@ class StateManager(ABC, Events):
         state machine acknowledges the transition into a new state.
         """
         pass
-
-
-
