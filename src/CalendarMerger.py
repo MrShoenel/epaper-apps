@@ -1,4 +1,3 @@
-import sys
 import datetime
 import pytz
 import requests
@@ -9,7 +8,7 @@ from dateutil import tz
 from typing import Any, Callable
 from threading import Timer, Semaphore
 from src.CustomFormatter import CustomFormatter
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from icalendar import Calendar, Event, Todo
 from recurring_ical_events import of
 
