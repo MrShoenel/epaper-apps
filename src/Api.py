@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, request
+from flask import Flask, send_from_directory, request
 from flask.json import JSONEncoder
 from requests import get
 from datetime import datetime, timedelta
@@ -81,6 +81,12 @@ class Api:
         else:
             self._thread = Thread(target=lambda: _api.run(host=host, port=port))
             self._thread.start()
+        return self
+    
+    def waitStop(self):
+        if not type(self._thread) is Thread:
+            raise Exception('The API was not started asynchronously.')
+        self._thread.join()
         return self
     
     def stop(self):

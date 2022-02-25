@@ -4,8 +4,9 @@ from src.Configurator import Configurator
 
 c = Configurator.fromJson(path='config.json')
 c.setupCalendar()
+c.startApi(blocking=False)
 c.setupStateMachines()
 if os.name == 'posix':
     c.setupBtnLedControl()
     c.initStateMachines()
-c.startApi(blocking=True) # If this is not blocking, the 'c' object will be collected!
+c.waitApi()

@@ -66,13 +66,17 @@ class Configurator:
         with open(file=path, mode='r', encoding='utf-8') as fp:
             return Configurator(config=load(fp=fp))
     
-    def startApi(self, blocking: bool=False):
+    def startApi(self, blocking: bool=False) -> Api:
         c = self.config['api']
         self.api.run(host=c['host'], port=c['port'], blocking=blocking)
         return self
     
     def stopApi(self):
         self.api.stop()
+        return self
+    
+    def waitApi(self):
+        self.api.waitStop()
         return self
     
     def setupStateMachines(self):
