@@ -234,12 +234,15 @@ class CalendarMerger:
         self.merged_evt: Calendar = None
         self.merged_todo: Calendar = None
 
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
+
         self.calendars: dict[str, IntervalCalendar] = {}
         if not cal_config is None:
             for conf in cal_config['merge']:
                 self.addCalendar(IntervalCalendar(**conf))
     
     def addCalendar(self, intervalCal: IntervalCalendar):
+        self.logger.debug(f'Adding IntervalCalendar: {intervalCal.name}')
         self.calendars[intervalCal.name] = intervalCal
         return self
     
