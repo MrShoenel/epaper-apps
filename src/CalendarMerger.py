@@ -140,6 +140,7 @@ class IntervalCalendar:
 
         self._stopTimer()
         self._timer = Timer(interval=float(self.interval), function=resetCal)
+        self._timer.start()
         return self
 
     def isCached(self):
