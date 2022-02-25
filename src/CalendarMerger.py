@@ -384,7 +384,14 @@ class CalendarMerger:
         return weekdays
 
     def __str__(self):
-        return self.getMergedCalendar().to_ical(sorted=True)
+        cal_evts = self.getMergedCalendar(events=True)
+        cal_todo = self.getMergedCalendar(events=False)
+
+        # Create a merged calendar with events AND todos:
+        for comp in cal_todo.subcomponents:
+            cal_evts.add_component(comp)
+        
+        return cal_evts.to_ical(sorted=True)
     
     def apiCal(self):
         return self.__str__(), 200, {'Content-Type': 'text/calendar; charset=utf-8'}
