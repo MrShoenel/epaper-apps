@@ -15,6 +15,7 @@ from statistics import mean
 from timeit import default_timer as timer
 from time import sleep
 from threading import Semaphore
+from fasteners import InterProcessLock
 
 
 
@@ -57,6 +58,9 @@ class ePaperStateMachine(StateManager):
         fp_black = None
         fp_red = None
         try:
+            lock = InterProcessLock(path=abspath(join(data_folder, 'write.lock')))
+            lock.acquire()
+
             fp_black = open(file=abspath(join(data_folder, f'{state_to}_b.png')), mode='rb')
             fp_red = open(file=abspath(join(data_folder, f'{state_to}_r.png')), mode='rb')
             
@@ -108,6 +112,7 @@ class ePaperStateMachine(StateManager):
                 fp_black.close()
             if not fp_red is None and not fp_red.closed:
                 fp_red.close()
+            lock.release()
             self._semaphore_finalize.release()
             self._busy = False
 

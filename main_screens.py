@@ -5,6 +5,7 @@ from os.path import join, abspath
 from PIL import Image
 from src.Configurator import Configurator
 from src.ScreenshotMaker import ScreenshotMaker
+from fasteners import InterProcessLock
 
 
 if len(sys.argv) < 2:
@@ -15,6 +16,8 @@ conf_name = sys.argv[1]
 conf = Configurator.fromJson(path='config.json')
 screen_conf = conf.getScreenConfig(conf_name)
 data_folder = conf.getGeneralConfig()['data_folder'][os.name]
+lock = InterProcessLock(path=abspath(join(data_folder, 'write.lock')))
+lock.acquire()
 
 
 if __name__ == "__main__":
@@ -33,6 +36,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(e)
     finally:
+        lock.release()
         if os.name == 'nt':
             os.kill(os.getpid(), signal.SIGINT)
         else:

@@ -1,8 +1,7 @@
 import io
 import os
-import numpy as np
 from time import sleep
-from PIL import Image, ImageOps, ImageEnhance
+from PIL import Image #, ImageOps, ImageEnhance
 from selenium import webdriver
 
 
@@ -48,7 +47,7 @@ class ScreenshotMaker:
 
         return self
     
-    def screenshot(self, width: int, height: int, url: str) -> [Image.Image, Image.Image]:
+    def screenshot(self, width: int, height: int, url: str) -> list[Image.Image, Image.Image]:
         self.setViewportSize(width=width, height=height)
         self.driver.get(url=url)
         sleep(5)
