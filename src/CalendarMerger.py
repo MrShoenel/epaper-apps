@@ -120,16 +120,29 @@ class IntervalCalendar:
         self.tz_indef = tz_indef
         self.cal_text: str = None
         self.semaphore = Semaphore(value=1)
+
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
-        # Conditionally enable re-setting the calendar through a timer:
-        def resetCal():
-            self.logger.debug(f'Resetting calendar {self.name}.')
-            self.cal_text = None
+        self._timer: Timer = None
         if self.interval > 0:
-            self.timer = Timer(interval=float(interval), function=resetCal)
-            self.timer.start()
+            self._startTimer()
     
+    def _stopTimer(self):
+        if type(self._timer) is Timer and self._timer.is_alive():
+            self._timer.cancel()
+            self._timer = None
+        return self
+
+    def _startTimer(self):
+        def resetCal():
+            self.logger.debug(f'Resetting calendar: {self.name}.')
+            self.cal_text = None
+            self._startTimer() # re-start timer
+
+        self._stopTimer()
+        self._timer = Timer(interval=float(self.interval), function=resetCal)
+        return self
+
     def isCached(self):
         return type(self.cal_text) is str
     
