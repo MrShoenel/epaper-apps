@@ -171,11 +171,6 @@ class IntervalCalendar:
         for event in cal.walk("VEVENT"):
             end = event.get('dtend')
             if end:
-                if hasattr(end.dt, 'date'):
-                    date = end.dt.date()
-                else:
-                    date = end.dt
-                
                 copied_event = Event()
                 copied_event.add(name='X-CALENDARNAME', value=self.name)
                 if 'RRULE' in event:
