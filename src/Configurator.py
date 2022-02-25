@@ -40,7 +40,7 @@ class Configurator:
             Configurator.GPIO_SET_UP = True
 
         # For async firing of callbacks etc.
-        self._tpe = ThreadPoolExecutor(max_workers=1)
+        self._tpe = ThreadPoolExecutor(max_workers=2)
         atexit.register(lambda: self._tpe.shutdown())
 
         data_folder = config['general']['data_folder'][os.name]
@@ -86,7 +86,8 @@ class Configurator:
 
             # We'll register our own callback for general actions, whenever there is
             # a transition.
-            self.epaperStateMachine.beforeInit += self.beforeInitCallback
+            # self.epaperStateMachine.beforeInit += self.beforeInitCallback
+            self.epaperStateMachine.beforeInit += lambda **kwargs: self._tpe.submit(self.beforeInitCallback, **kwargs)
 
             # The LCD is controlled solely by the e-paper, as it depends on
             # the actions applicable to it. So we'll set up the hooks here.
@@ -103,6 +104,8 @@ class Configurator:
         In this method we will check if there are actions associated with
         the transition in question. All actions will be triggered in series.
         """
+        if transition is None:
+            return # Happens during initialization of state machines
         conf = self.config['state_managers']['epaper']
 
         # First we need to find the transition that is currently triggered.
@@ -110,7 +113,7 @@ class Configurator:
         if len(trans) != 1:
             raise Exception('Cannot identify the correct transition.')
         
-        for action_name in trans['actions']:
+        for action_name in trans[0]['actions']:
             actions = list(filter(lambda a: a['name'] == action_name, conf['actions']))
             if len(actions) == 1:
                 action = actions[0]
@@ -120,14 +123,14 @@ class Configurator:
 
                 args = action['args']
                 led = self.ctrl.getLed(name=action['use_output'])
-                duration = self.epaperStateMachine.lastDuration
+                duration = self.epaperStateMachine.lastDuration(state_to=state_to)
                 if type(args['duration']) is float:
                     duration = args['duration']
                 if args['activity'] == 'burn':
-                    self.logger.debug(f'Triggering action "burn" for {led.name} for a duration of {format(duration, "{:.2f}")} seconds.')
+                    self.logger.debug(f'Triggering action "burn" for {led.name} for a duration of {format(duration, ".2f")} seconds.')
                     self._tpe.submit(lambda: self.ctrl.burnLed(led=led, burn_for=duration))
                 elif args['activity'] == 'blink':
-                    self.logger.debug(f'Triggering action "blink" for {led.name} for a duration of {format(duration, "{:.2f}")} seconds with a frequency of {args["freq"]} Hz.')
+                    self.logger.debug(f'Triggering action "blink" for {led.name} for a duration of {format(duration, ".2f")} seconds with a frequency of {args["freq"]} Hz.')
                     self._tpe.submit(lambda: self.ctrl.blinkLed(led=led, duration=duration, freq=args['freq']))
 
     def initStateMachines(self):
