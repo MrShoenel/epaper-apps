@@ -199,7 +199,7 @@ class IntervalCalendar:
             for attr in todo:
                 if type(todo[attr]) is list:
                     for element in todo[attr]:
-                        copied_todo.add(attr, todo[attr])
+                        copied_todo.add(attr, element)
                 else:
                     copied_todo.add(attr, todo[attr])
             
