@@ -1,7 +1,7 @@
 import os
 from src.CustomFormatter import CustomFormatter
 from events import Events
-from typing import Set
+from typing import Dict, Set
 from datetime import datetime
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -31,8 +31,11 @@ class ButtonsAndLeds(Events):
         super().__init__(events=('on_button', ))
         self._buttons: Set[Button] = set()
         self._leds: Set[Led] = set()
-        # Used to asynchronously fire buttons, and LEDs
-        self._tpe = ThreadPoolExecutor(max_workers=2)
+        # Used to asynchronously check buttons
+        self._tpe = ThreadPoolExecutor(max_workers=3)
+
+        # Have a separate TPE for each LED with 1 worker
+        self._led_tpes: Dict[int, ThreadPoolExecutor] = {}
 
         atexit.register(self.cleanup)
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
@@ -71,7 +74,7 @@ class ButtonsAndLeds(Events):
             f.cancel()
             return f
         else:
-            return self._tpe.submit(temp, duration)
+            return self._led_tpes[led.pin].submit(temp, duration)
 
     def burnLed(self, led: Led, burn_for: float=None) -> Future:
         def temp():
@@ -87,7 +90,7 @@ class ButtonsAndLeds(Events):
             f.cancel()
             return f
         else:
-            return self._tpe.submit(temp)
+            return self._led_tpes[led.pin].submit(temp)
     
     def cleanup(self):
         self.logger.debug('Cleaning up registered buttons and LEDs.')
@@ -126,6 +129,9 @@ class ButtonsAndLeds(Events):
         self.logger.debug(f'Adding LED on GPIO {pin}.')
         GPIO.setup(pin, GPIO.OUT)
         self._leds.add(led)
+
+        # Create TPE:
+        self._led_tpes[pin] = ThreadPoolExecutor(max_workers=1)
 
         return led
     
@@ -171,4 +177,3 @@ if __name__ == "__main__":
     ctrl.on_button += btnCallback
 
     input('Press enter to quit.')
-
