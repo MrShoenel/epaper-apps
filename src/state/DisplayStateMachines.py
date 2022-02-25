@@ -33,10 +33,9 @@ class ePaperStateMachine(StateManager):
     @property
     def busy(self) -> bool:
         return self._busy
-    
-    @property
-    def lastDuration(self, image: str) -> float:
-        q = self._last_durations[image]
+
+    def lastDuration(self, state_to: str) -> float:
+        q = self._last_durations[state_to]
         if len(q) == 0:
             return 30.0 # The default duration if we don't know so far
         return mean(list(q))
@@ -49,6 +48,11 @@ class ePaperStateMachine(StateManager):
         # being present at this point.
         # If we also use an LCD, we may also show some info there.
         data_folder = self._config['general']['data_folder'][os.name]
+
+
+        if not state_to in self._last_durations.keys():
+            # 3 is enough to more quickly react to recent changes.
+            self._last_durations[state_to] = deque(maxlen=3)
 
         fp_black = None
         fp_red = None
@@ -63,13 +67,18 @@ class ePaperStateMachine(StateManager):
             # repeatedly trigger the progress event.
             done = False
             def progress():
-                n = 100
-                for i in range(1, n+1):
-                    if done:
+                num_updates = 100
+                wait_total = self.lastDuration(state_to=state_to)
+                wait_frac = wait_total / num_updates
+                start = timer()
+
+                while True:
+                    progress = min((timer() - start) / wait_total, 1.0)
+                    if done or progress >= 1.0:
+                        self.activateProgress(sm=self, state_from=state_from, state_to=state_to, transition=transition, progress=1.0)
                         break
-                    # self.logger.debug(f'Event: activateProgress ({i/n})')
-                    self.activateProgress(sm=self, state_from=state_from, state_to=state_to, transition=transition, progress=i/n)
-                    sleep((self.lastDuration + 3.0)/n)
+                    self.activateProgress(sm=self, state_from=state_from, state_to=state_to, transition=transition, progress=progress)
+                    sleep(wait_frac)
 
             self._tpe.submit(progress)
             self.logger.debug('Writing black and red image to e-paper.')
@@ -82,7 +91,7 @@ class ePaperStateMachine(StateManager):
 
                     duration = timer() - start_write
                     self._last_durations[state_to].append(duration)
-                    self.logger.debug(f'Writing took {format(timedelta(seconds=duration), "{:.2f}")} seconds.')
+                    self.logger.debug(f'Writing took {format(duration, ".2f")} seconds.')
                     self._state = state_to
                     break
                 except Exception as e:
@@ -90,7 +99,7 @@ class ePaperStateMachine(StateManager):
                     if retries < 0:
                         self.logger.error(f'ePaper::display errored after {self._retries + 1} attempt(s) to display an image. The exception was: {str(e)}')
                         raise e # re-throw
-                    self.logger.debug(f'ePaper::display had an exception, trying again in {format(self._retry_delay, "{:.2f}")} seconds. Exception was: {str(e)}')
+                    self.logger.debug(f'ePaper::display had an exception, trying again in {format(self._retry_delay, ".2f")} seconds. Exception was: {str(e)}')
                     sleep(self._retry_delay)
                 finally:
                     done = True
