@@ -10,6 +10,7 @@ click==8.0.3
 colorama==0.4.4
 cryptography==36.0.1
 Events==0.4
+fasteners==0.17.3
 Flask==2.0.2
 h11==0.13.0
 h2==4.1.0
