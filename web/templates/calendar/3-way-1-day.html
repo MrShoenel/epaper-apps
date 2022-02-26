@@ -163,7 +163,7 @@
                 $div.append($span);
 
                 let $titleSpan = $('<span/>').text((view_config.tasklist.show_cal_name ? `[${e.cal_name}] ` : '') + e.title);
-                if (e.end !== null && e.end.ts < time_now.ts) {
+                if (!e.is_task && e.end !== null && e.end.ts < time_now.ts) {
                     $titleSpan.addClass('done-event');
                 }
 
