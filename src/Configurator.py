@@ -9,6 +9,7 @@ from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from json import dumps, load
+from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
 from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
@@ -16,6 +17,7 @@ from src.Api import Api
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
 from src.ScreenshotMaker import ScreenshotMaker
+from src.SelfResetLazy import SelfResetLazy
 from os.path import join, abspath
 from threading import Semaphore, Timer
 from flask import render_template, request
@@ -64,8 +66,7 @@ class Configurator:
         self.hasTextLcd: bool = False
         self.textLcdStateMachine: TextLcdStateMachine = None
         self.ctrl: ButtonsAndLeds = None
-        self.ssm: ScreenshotMaker = None
-        self._timers: Dict[str, Timer]
+        self.ssm: SelfResetLazy[ScreenshotMaker] = None
     
 
     def fromJson(path: str='config.json'):
@@ -261,16 +262,34 @@ class Configurator:
     
     def setupScreenshotService(self):
         self.logger.info('Setting up a ScreenshotMaker for internal API.')
-
-        self.ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
+        destroy_after = self.config['general']['destroy_screenshot_service_after']
+        
         semaphore = Semaphore(1) # Only one screenshot at a time!
+
+        def create_ssm() -> ScreenshotMaker:
+            start = timer()
+            self.logger.debug(f'Creating a ScreenshotMaker, it shall live for {destroy_after} seconds.')
+            ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
+            self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
+            return ssm
+
+        def destroy_ssm(ssm: ScreenshotMaker):
+            self.logger.debug('Destroying the ScreenshotMaker!')
+            try:
+                semaphore.acquire()
+                ssm.__del__()
+            finally:
+                semaphore.release()
+                self.logger.debug('ScreenshotMaker was destroyed.')
+        
+        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=destroy_ssm, resetAfter=float(destroy_after))
 
         def temp(which: str):
             try:
                 conf = self.getScreenConfig(name=which)
                 self.logger.debug(f'Taking screenshot of {which} in resolution {conf["width"]}x{conf["height"]}.')
                 semaphore.acquire()
-                blackimg, redimg = self.ssm.screenshot(**conf)
+                blackimg, redimg = self.ssm.value.screenshot(**conf)
 
                 with open(file=abspath(join(self.data_folder, f'{which}_b.png')), mode='wb') as fp:
                     blackimg.save(fp)
