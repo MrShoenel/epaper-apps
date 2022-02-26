@@ -4,6 +4,7 @@ import calendar
 import pathlib
 import atexit
 import locale
+import requests
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -14,7 +15,10 @@ from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
 from src.Api import Api
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
-from flask import render_template
+from src.ScreenshotMaker import ScreenshotMaker
+from os.path import join, abspath
+from threading import Semaphore, Timer
+from flask import render_template, request
 
 if os.name == 'posix':
     import RPi.GPIO as GPIO
@@ -43,8 +47,8 @@ class Configurator:
         self._tpe = ThreadPoolExecutor(max_workers=2)
         atexit.register(lambda: self._tpe.shutdown())
 
-        data_folder = config['general']['data_folder'][os.name]
-        pathlib.Path(data_folder).mkdir(parents=True, exist_ok=True)
+        self.data_folder = config['general']['data_folder'][os.name]
+        pathlib.Path(self.data_folder).mkdir(parents=True, exist_ok=True)
         CustomFormatter.setLevel(level=getattr(logging, config['general']['log_level'], None))
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
@@ -60,6 +64,8 @@ class Configurator:
         self.hasTextLcd: bool = False
         self.textLcdStateMachine: TextLcdStateMachine = None
         self.ctrl: ButtonsAndLeds = None
+        self.ssm: ScreenshotMaker = None
+        self._timers: Dict[str, Timer]
     
 
     def fromJson(path: str='config.json'):
@@ -249,6 +255,65 @@ class Configurator:
 
         return self
     
+    @property
+    def useScreenshotService(self):
+        return self.config['general']['use_screenshot_service']
+    
+    def setupScreenshotService(self):
+        self.logger.info('Setting up a ScreenshotMaker for internal API.')
+
+        self.ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
+        semaphore = Semaphore(1) # Only one screenshot at a time!
+
+        def temp(which: str):
+            try:
+                conf = self.getScreenConfig(name=which)
+                self.logger.debug(f'Taking screenshot of {which} in resolution {conf["width"]}x{conf["height"]}.')
+                semaphore.acquire()
+                blackimg, redimg = self.ssm.screenshot(**conf)
+
+                with open(file=abspath(join(self.data_folder, f'{which}_b.png')), mode='wb') as fp:
+                    blackimg.save(fp)
+                with open(file=abspath(join(self.data_folder, f'{which}_r.png')), mode='wb') as fp:
+                    redimg.save(fp)
+                
+                return 'OK', 200
+            except Exception as e:
+                return 'ERROR', 500
+            finally:
+                semaphore.release()
+
+        self.api.addRoute(route='/screens/<which>', fn=temp)
+
+        self.logger.info(f'Finished setting up ScreenshotMaker.')
+        
+        return self
+    
+    def _setScreenTimer(self, url: str, interval: int):
+        def temp():
+            requests.get(url=url)
+            self._setScreenTimer(url=url, interval=interval)
+        timer = Timer(interval=interval, function=temp)
+        timer.start()
+
+        return self
+    
+    def setupScreenIntervals(self):
+        api = self.config['api']
+        host = api['host']
+        if host == '0.0.0.0':
+            host = '127.0.0.1'
+        port = api['port']
+
+        keys = list(filter(lambda scr: scr != '_comment', self.config['screens'].keys()))
+
+        for key, conf in zip(keys, [self.getScreenConfig(x) for x in keys]):
+            self.logger.debug(f'Adding screenshot interval of {conf["interval"]} seconds for screen "{key}".')
+            self._setScreenTimer(url=f'http://{host}:{port}/screens/{key}', interval=conf['interval'])
+        
+        return self
+
+    
     def getGeneralConfig(self):
         return self.config['general']
 
@@ -259,6 +324,8 @@ class Configurator:
 
         api = self.config['api']
         host = api['host']
+        if host == '0.0.0.0':
+            host = '127.0.0.1'
         port = api['port']
         conf['url'] = f'http://{host}:{port}/calendar/{name}'
         return conf
