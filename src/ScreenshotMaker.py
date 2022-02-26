@@ -25,9 +25,11 @@ class ScreenshotMaker:
             raise Exception(f'Driver "{driver}" not known.')
     
     def __del__(self):
-        self.driver.stop_client()
-        self.driver.close()
-        self.driver.quit()
+        try:
+            self.driver.close()
+            self.driver.quit()
+        except Exception:
+            pass # don't care at all, we just want it gone!
 
 
     def setViewportSize(self, width, height):
