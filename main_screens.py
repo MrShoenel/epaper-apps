@@ -2,10 +2,9 @@ import os
 import sys
 import signal
 from os.path import join, abspath
-from PIL import Image
 from src.Configurator import Configurator
 from src.ScreenshotMaker import ScreenshotMaker
-from fasteners import InterProcessLock
+from src.SuperLock import SuperLock
 
 
 if len(sys.argv) < 2:
@@ -22,7 +21,7 @@ if __name__ == "__main__":
     if os.name != 'nt':
         os.setpgrp()
     
-    lock = InterProcessLock(path=abspath(join(data_folder, 'write.lock')))
+    lock = SuperLock(path=abspath(join(data_folder, 'write.lock')))
 
     try:
         sm = ScreenshotMaker(driver=conf.getGeneralConfig()['screen_driver'])
