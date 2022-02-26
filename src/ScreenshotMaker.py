@@ -47,7 +47,7 @@ class ScreenshotMaker:
 
         return self
     
-    def screenshot(self, width: int, height: int, url: str) -> list[Image.Image, Image.Image]:
+    def screenshot(self, width: int, height: int, url: str, **kwargs) -> list[Image.Image, Image.Image]:
         self.setViewportSize(width=width, height=height)
         self.driver.get(url=url)
         sleep(5)
