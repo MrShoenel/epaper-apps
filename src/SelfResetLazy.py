@@ -17,20 +17,23 @@ class SelfResetLazy(Generic[T]):
         self.resetAfter = resetAfter
         self._timer: Timer = None
     
-    def _setTimer(self):
-        def temp():
-            try:
-                self._semaphore.acquire()
-                if self._has_val:
-                    self.fnDestroyVal(self._val) # Pass in the current value
-                    self._val = None
-                    self._has_val = False
-                    self._setTimer()
-            finally:
-                self._semaphore.release()
-        self._timer = Timer(interval=self.resetAfter, function=temp)
-        self._timer.start()
+    def unsetValue(self):
+        try:
+            self._semaphore.acquire()
+            if self._has_val:
+                self.fnDestroyVal(self._val) # Pass in the current value
+                self._val = None
+                self._has_val = False
+                self._setTimer()
+        finally:
+            self._semaphore.release()
 
+        return self
+
+    
+    def _setTimer(self):
+        self._timer = Timer(interval=self.resetAfter, function=self.unsetValue)
+        self._timer.start()
         return self
     
     @property
