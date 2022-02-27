@@ -2,6 +2,7 @@ import os
 from PIL import Image
 from src.CustomFormatter import CustomFormatter
 from threading import Timer
+from random import uniform
 
 if os.name == 'posix':
     from src.epd7in5b_V2 import EPD, epdconfig
@@ -16,7 +17,7 @@ class ePaper():
     @staticmethod
     def display(black_img: Image, red_img):
         e = ePaper()
-        e._display(black_img=black_img, red_img=red_img, clear_before=True, sleep_after=False)
+        e._display(black_img=black_img, red_img=red_img, clear_before=None, sleep_after=False)
         del e
         return None
     
@@ -49,7 +50,8 @@ class ePaper():
                 self.epaper.init()
                 self._inited = True
             
-            if not was_inited or clear_before:
+            if uniform(0,1) > 2/3:
+                self.logger.debug('Clearing e-paper display.')
                 self.epaper.Clear()
             
             self.epaper.display(
