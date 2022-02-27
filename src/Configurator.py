@@ -227,6 +227,19 @@ class Configurator:
         
         self.api.addRoute(route='/calendar/3-way-1-day', fn=render3way1day)
 
+        def render2way2days():
+            return render_template(
+                'calendar/2-way-2-days.html',
+                time_tomorrow=datetime.now().astimezone() + timedelta(days=1),
+                time_overmorrow=datetime.now().astimezone() + timedelta(days=2),
+                day_names=list(map(lambda str: str.capitalize(), calendar.day_name)),
+                month_names=list(filter(lambda s: s != '', map(lambda str: str.capitalize(), calendar.month_name))),
+                events_tomorrow=self.calendar.eventsToday(add_days=1) + self.calendar.todosToday(add_days=1),
+                events_overmorrow=self.calendar.eventsToday(add_days=2) + self.calendar.todosToday(add_days=2),
+                view_config=self.config['views']['2-way-2-days'])
+
+        self.api.addRoute(route='/calendar/2-way-2-days', fn=render2way2days)
+
         def renderMultiWeek():
             c = self.config['views']['multi-week']
             num_weeks = c['num_weeks']
