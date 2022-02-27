@@ -134,7 +134,7 @@ class IntervalCalendar:
 
     def _startTimer(self):
         def resetCal():
-            self.logger.debug(f'Resetting calendar: {self.name}.')
+            self.logger.debug(f'Resetting calendar "{self.name}" now after a timeout of {format(self.interval, ".2f")} seconds.')
             self.cal_text = None
             self._startTimer() # re-start timer
 
@@ -153,7 +153,7 @@ class IntervalCalendar:
         try:
             if not self.isCached():
                 # Then we have to re-fetch this calendar.
-                self.logger.debug(f'Downloading events for calendar {self.name}.')
+                self.logger.debug(f'Downloading events for calendar "{self.name}".')
                 res = http.get(url=self.url)
                 if res.status_code != 200:
                     raise Exception(f'Cannot fetch ical, status={res.status_code}')
@@ -250,7 +250,7 @@ class CalendarMerger:
                 self.addCalendar(IntervalCalendar(**conf))
     
     def addCalendar(self, intervalCal: IntervalCalendar):
-        self.logger.debug(f'Adding IntervalCalendar: {intervalCal.name}')
+        self.logger.debug(f'Adding IntervalCalendar "{intervalCal.name}"')
         self.calendars[intervalCal.name] = intervalCal
         return self
     

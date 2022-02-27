@@ -101,9 +101,9 @@ class ePaperStateMachine(StateManager):
                 except Exception as e:
                     retries -= 1
                     if retries < 0:
-                        self.logger.error(f'ePaper::display errored after {self._retries + 1} attempt(s) to display an image. The exception was: {str(e)}')
+                        self.logger.error(f'ePaper::display finally errored after {self._retries + 1} attempt(s) to display an image. The exception was: {str(e)}')
                         raise e # re-throw
-                    self.logger.debug(f'ePaper::display had an exception, trying again in {format(self._retry_delay, ".2f")} seconds. Exception was: {str(e)}')
+                    self.logger.debug(f'ePaper::display had an exception, trying again in {format(self._retry_delay, ".2f")} seconds ({retries+1} retries left). Exception was: {str(e)}')
                     sleep(self._retry_delay)
                 finally:
                     done = True

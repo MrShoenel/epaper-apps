@@ -20,7 +20,7 @@ from src.ScreenshotMaker import ScreenshotMaker
 from src.SelfResetLazy import SelfResetLazy
 from os.path import join, abspath
 from threading import Semaphore, Timer
-from flask import render_template, request
+from flask import render_template
 
 if os.name == 'posix':
     import RPi.GPIO as GPIO
@@ -58,7 +58,7 @@ class Configurator:
         
         # Set locale:
         locale.setlocale(locale.LC_ALL, config['general']['locale'])
-        self.logger.debug(f'The current locale is {locale.getlocale()}')
+        self.logger.debug(f'The current locale is "{locale.getlocale()}".')
 
         self.api: Api = Api()
         self.calendar: CalendarMerger = None
@@ -138,10 +138,10 @@ class Configurator:
                 if type(args['duration']) is float:
                     duration = args['duration']
                 if args['activity'] == 'burn':
-                    self.logger.debug(f'Triggering action "burn" for {led.name} for a duration of {format(duration, ".2f")} seconds.')
+                    self.logger.debug(f'Triggering action "burn" for LED "{led.name}"@{led.pin} for a duration of {format(duration, ".2f")} seconds.')
                     self._tpe.submit(lambda: self.ctrl.burnLed(led=led, burn_for=duration))
                 elif args['activity'] == 'blink':
-                    self.logger.debug(f'Triggering action "blink" for {led.name} for a duration of {format(duration, ".2f")} seconds with a frequency of {args["freq"]} Hz.')
+                    self.logger.debug(f'Triggering action "blink" for LED "{led.name}"@{led.pin} for a duration of {format(duration, ".2f")} seconds with a frequency of {args["freq"]} Hz.')
                     self._tpe.submit(lambda: self.ctrl.blinkLed(led=led, duration=duration, freq=args['freq']))
 
     def initStateMachines(self):
@@ -268,7 +268,7 @@ class Configurator:
 
         def create_ssm() -> ScreenshotMaker:
             start = timer()
-            self.logger.debug(f'Creating a ScreenshotMaker, it shall live for {destroy_after} seconds.')
+            self.logger.debug(f'Creating a ScreenshotMaker, it shall live for {format(destroy_after, ".2f")} seconds.')
             ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
             self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
             return ssm
@@ -287,7 +287,8 @@ class Configurator:
         def temp(which: str):
             try:
                 conf = self.getScreenConfig(name=which)
-                self.logger.debug(f'Taking screenshot of {which} in resolution {conf["width"]}x{conf["height"]}.')
+                start = timer()
+                self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
                 semaphore.acquire()
                 blackimg, redimg = self.ssm.value.screenshot(**conf)
 
@@ -295,6 +296,8 @@ class Configurator:
                     blackimg.save(fp)
                 with open(file=abspath(join(self.data_folder, f'{which}_r.png')), mode='wb') as fp:
                     redimg.save(fp)
+                
+                self.logger.debug(f'Done taking screenshot of "{which}". It took {format(timer() - start, ".2f")} seconds.')
                 
                 return 'OK', 200
             except Exception as e:
@@ -327,7 +330,7 @@ class Configurator:
         keys = list(filter(lambda scr: scr != '_comment', self.config['screens'].keys()))
 
         for key, conf in zip(keys, [self.getScreenConfig(x) for x in keys]):
-            self.logger.debug(f'Adding screenshot interval of {conf["interval"]} seconds for screen "{key}".')
+            self.logger.debug(f'Adding screenshot interval of {format(conf["interval"], ".2f")} seconds for screen "{key}".')
             self._setScreenTimer(url=f'http://{host}:{port}/screens/{key}', interval=conf['interval'])
         
         return self
