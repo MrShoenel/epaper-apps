@@ -90,15 +90,13 @@
             }
 						
             e.is_indef_task = e.is_task && e.start === null && e.end === null;
-            const p = e.start === null ? e.end : e.start;
-            e.is_overdue_undone_task = e.is_task && p !== null && p.ts < time.ts;
 
             return e;
         }).filter(e => {
             // Remove events that bleed into the day, i.e., include only events
             // that start the given day!
             // Also, exclude indefinite tasks here.
-            if (e.is_indef_task || e.is_overdue_undone_task) {
+            if (e.is_indef_task) {
                 return false;
             }
             if (e.start !== null) {
