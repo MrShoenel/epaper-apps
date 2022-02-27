@@ -1,0 +1,86 @@
+div#header-tomorrow, div#header-overmorrow {
+	border-bottom: 1px solid #000;
+
+	h1 {
+		margin: 0;
+		font-size: 28px;
+		text-align: center;
+
+		span {
+			font-size: 16px;
+			margin-left: .5ex;
+			font-weight: 100;
+		}
+	}
+}
+
+div#header-tomorrow, div#events-tomorrow {
+	border-right: 1px solid #000;
+}
+div#header-overmorrow, div#events-overmorrow {
+	border-left: 1px solid #000;
+}
+
+
+div#events-tomorrow, div#events-overmorrow {
+
+	div.today-hours {
+
+			&:not(:first-child) {
+					border-top: 1px solid #666;
+			}
+
+			&>span {
+					padding-left: 2px;
+					font-size: 12px;
+					font-weight: 900;
+					font-family: 'WenQuanYi Micro Hei';
+			}
+	}
+	
+
+	div.event {
+
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			// border: 1px solid #444;
+			outline: 1px solid #444;
+			outline-offset: -1px;
+
+			background-color: #eee;
+			min-height: 32px;
+			padding: 2px;
+
+			&:nth-child(odd) {
+					background-color: #ccc !important;
+			}
+
+			div.title, div.desc {
+					overflow: hidden;
+					text-overflow: clip;
+					white-space: nowrap;
+			}
+
+			div.time {
+					letter-spacing: -1px;
+					font-size: 14px;
+					font-weight: 900;
+					font-family: 'WenQuanYi Micro Hei Mono';
+					width: 100%;
+					padding: 0 2px;
+					margin-left: -2px;
+					border-bottom: 1px solid #000;
+			}
+
+			div.title {
+					letter-spacing: -1px;
+					font-size: 14px;
+			}
+
+			div.desc {
+					font-size: 12px;
+					white-space: initial;
+			}
+	}
+}

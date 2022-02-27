@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>3-way Calendar View</title>
+    <link rel="shortcut icon" href="data:" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/default.less" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/2-way-2-days.less" />
+    <script type="text/javascript" src="/web/assets/less@4.js"></script>
+</head>
+<!--
+    This template shows 2 elements:
+    - Events of the day, Thunderbird-style (overlapping events are shown
+      next to each other)
+		- This is shown for the next day (tomorrow) and the day after that
+-->
+<body>
+    <script type="text/javascript">
+        let time_tomorrow = {{ time_tomorrow|tojson|safe }};
+        let time_overmorrow = {{ time_overmorrow|tojson|safe }};
+        let day_names = {{ day_names|tojson|safe }};
+        let month_names = {{ month_names|tojson|safe }};
+				let events_tomorrow = {{ events_tomorrow|tojson|safe }};
+				let events_overmorrow = {{ events_overmorrow|tojson|safe }};
+        const view_config = {{ view_config|tojson|safe }};
+    </script>
+    <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+
+    <div style="width: 800px; height: 480px; border: 0px solid #000;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 35px 1fr; gap: 0px; width: 100%; height: 100%; overflow: hidden;">
+					  <div id="header-tomorrow" style="grid-column: 1; grid-row: 1;"></div>
+						<div id="header-overmorrow" style="grid-column: 2; grid-row: 1;"></div>
+						<div id="events-tomorrow" style="grid-column: 1; grid-row: 2;"></div>
+						<div id="events-overmorrow" style="grid-column: 2; grid-row: 2;"></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+    $(document).ready(async() => {
+        // 'inflate' too short events/tasks in case they don't have
+        // a duration or if it's too short. This is done for visual
+        // reasons. Set to 'null' if not desired.
+        const minDuration = 3600;
+
+        const timeout = ms => new Promise((resolve, reject) => {
+            setTimeout(resolve, ms)
+        });
+
+        const waitForElemWidth = $e => new Promise(async resolve => {
+            while (true) {
+                if ($e.innerWidth() === 0) {
+                    await timeout(20)
+                } else {
+                    break
+                }
+            }
+            resolve()
+        });
+
+        const waitForFont = sel => new Promise(async resolve => {
+            while (true) {
+                let s = getComputedStyle(document.querySelector(sel))
+                if (s.fontFamily.toLowerCase().indexOf('wenquan') >= 0) {
+                    break
+                } else {
+                    await timeout(20)
+                }
+            }
+            await timeout(50) // A final timeout to wait for the font to propagate to all other elements.
+            resolve();
+        });
+
+				$tomorrow = $('div#events-tomorrow');
+				$overmorrow = $('div#events-overmorrow')
+
+				await waitForElemWidth($tomorrow);
+				await waitForElemWidth($overmorrow);
+        await waitForFont('div#events-tomorrow');
+				await waitForFont('div#events-overmorrow');
+
+        const pad10 = s => {
+            if (`${s}`.length == 1) {
+                s = `0${s}`;
+            }
+            return s;
+        };
+
+				const preprocessEvents = (evts, time) => evts.map(e => {
+            if (minDuration !== null && e.duration === null) {
+                e.duration = minDuration;
+            }
+						
+            e.is_indef_task = e.is_task && e.start === null && e.end === null;
+            const p = e.start === null ? e.end : e.start;
+            e.is_overdue_undone_task = e.is_task && p !== null && p.ts < time.ts;
+
+            return e;
+        }).filter(e => {
+            // Remove events that bleed into the day, i.e., include only events
+            // that start the given day!
+            // Also, exclude indefinite tasks here.
+            if (e.is_indef_task || e.is_overdue_undone_task) {
+                return false;
+            }
+            if (e.start !== null) {
+                return e.start.day === time.day;
+            } else {
+                // No start: only allow tasks with end today!
+                return e.is_task && e.end !== null && e.end.day === time.day;
+            }
+            return false;
+        }).map(e => {
+            if (e.start === null) {
+                e.start = e.end;
+            } else if (e.end === null) {
+                e.end = e.start;
+            }
+            
+            return e;
+        }).sort((a, b) => a.start.ts - b.start.ts);
+
+
+				events_tomorrow = preprocessEvents(events_tomorrow, time_tomorrow);
+				events_overmorrow = preprocessEvents(events_overmorrow, time_overmorrow);
+
+        
+        const renderEventsForDay = (evts, time, $container) => {
+            // We'll show events next to each other, with some space in between.
+            // Also, there will be some space on the right to display the time.
+            const firstEvent = evts.length > 0 ? evts[0] : null;
+            let earliestHour = firstEvent === null ? 0 : firstEvent.start.hour;
+            const lastEvent = evts.length > 0 ? evts[evts.length - 1] : null;
+            let latestHour = lastEvent === null ? 23 : lastEvent.end.hour;
+            if (firstEvent.start.day < time.day) {
+                earliestHour = 0;
+            }
+            if (lastEvent.end.day > time.day) {
+                latestHour = 23;
+            }
+
+            // Now create some space:
+            if (earliestHour > 0) {
+                earliestHour -= 1;
+            }
+            if (latestHour < 23) {
+                latestHour += 1;
+            }
+            const range = function*(start, stop) {
+                while (start <= stop) {
+                    yield start;
+                    start++
+                }
+            };
+
+            // These will be the divs in the background with the hourly lines.
+            // They'll share the available height.
+            const divHours = [...range(earliestHour, latestHour)]
+            , divHoursHeight = $container.height() / divHours.length;
+            for (const hour of divHours) {
+                $container.append($('<div/>').addClass('today-hours').css({
+                    height: `${divHoursHeight-1}px`
+                }).addClass(`hour-${hour}`).append($('<span/>').text(pad10(hour))));
+            }
+
+            // The available horizontal space is:
+            // total - 16px (left span) - 2px (right margin)
+            // - (n-1)*2px (margin between items)
+            let calWidth = $container.width() - 24; // - (maxPara - 1) * 2;
+            // Available with per calendar item
+            // let perWidth = (calWidth - (maxPara - 1) * 2) / maxPara;
+            // Now, we'll keep an array of length maxPara, and at each index
+            // we'll store a list of events (the index corresponds to the column).
+            // Each event will be placed onto the calendar, into the first free
+            // column. A column is also considered free if there's enough vertical
+            // space.
+            let evtCols = [...Array(100)].map(_ => []);
+            while (evts.length > 0) {
+                let e = evts.shift();
+                let colIdx = evtCols.findIndex(col => {
+                    if (col.length === 0) {
+                        return true;
+                    }
+                    // col is not empty, but maybe there's space:
+                    const last = col[col.length - 1];
+                    if (last.end.ts < e.start.ts) {
+                        return true;
+                    }
+                    return false;
+                });
+
+                // y:
+                const absY = $container.find(`div.hour-${e.start.hour}`).offset().top +
+                    e.start.minute / 60 * divHoursHeight;
+                // .. and the height:
+                const absH = e.duration / 3600 * divHoursHeight - 4; // minus padding
+
+
+                // Append event to column,
+                evtCols[colIdx].push(e);
+                // then render:
+                let $divEvt = $('<div/>').addClass('event').css({
+                    position: 'absolute',
+                    top: `${absY}px`,
+                    height: `${absH}px`
+                    // backgroundColor: '#'+(Math.random().toString(16)+'00000').slice(2,8)
+                }).data('col-idx', colIdx).append(
+                    $('<div/>').addClass('time').text(
+                        `${pad10(e.start.hour)}:${pad10(e.start.minute)}-` +
+                        `${pad10(e.end.hour)}:${pad10(e.end.minute)}`
+                    )
+                ).append(
+                    $('<div/>').addClass('title').text(`[${e.cal_name}] ${e.title}`)
+                ).append(
+                    $('<div/>').addClass('desc').text(e.desc)
+                );
+                $container.append($divEvt);
+            }
+
+            // Let's check how many columns we needed:
+            evtCols = evtCols.filter(col => col.length > 0);
+            $container.find('div.event').each((idx, elem) => {
+                const $e = $(elem)
+                , perWidth = calWidth / evtCols.length - 2 - 6 - 2
+                , colIdx = $e.data('col-idx');
+                $e.css({
+                    width: `${perWidth}px`,
+                    left: `${$container.offset().left + 24 + colIdx * 2 + colIdx * 6 + colIdx * perWidth + colIdx * 2}px`
+                });
+            });
+        };
+        
+        const renderNoEventsToday = $container => {
+            $container.append(
+                $('<div/>').text('Nothing planned!').css({
+                    position: 'absolute',
+                    top: '150px',
+                    left: `${$container.width() / 2}px`,
+                    width: '300px',
+                    marginLeft: '-150px',
+                    fontSize: '48px',
+                    color: '#444',
+                    textAlign: 'center'
+                }).append(
+                    $('<p/>').text('Enjoy this uneventful day :)').css({
+                        fontSize: '14px',
+                        fontWeight: '900',
+                        backgroundColor: '#f00',
+                        color: '#fff',
+                        width: '180px',
+                        padding: '.5ex 1ex',
+                        marginLeft: 'calc(60px - 1ex)'
+                    })
+                )
+            );
+        };
+
+				if (events_tomorrow.length > 0) {
+					renderEventsForDay(events_tomorrow.slice(0), time_tomorrow, $tomorrow);
+				} else {
+					renderNoEventsToday($tomorrow);
+				}
+
+				if (events_overmorrow.length > 0) {
+					renderEventsForDay(events_overmorrow.slice(0), time_overmorrow, $overmorrow);
+				} else {
+					renderNoEventsToday($overmorrow);
+				}
+
+
+				const renderHeader = ($container, time) => {
+					let $span = $('<span/>').text(`${pad10(time.day)}. ${month_names[time.month - 1]}`)
+					let $h1 = $('<h1/>').text(`${day_names[time.iso_weekday - 1]},`).append($span).appendTo($container);
+				};
+
+				renderHeader($('div#header-tomorrow'), time_tomorrow);
+				renderHeader($('div#header-overmorrow'), time_overmorrow);
+    });
+    </script>
+</body>
+</html>
