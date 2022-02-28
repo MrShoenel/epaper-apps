@@ -1,5 +1,19 @@
+from concurrent.futures import ThreadPoolExecutor
 import logging
+from logging import LogRecord
+from events import Events
 
+
+seh_pool = ThreadPoolExecutor(max_workers=1)
+
+class StreamEventHandler(logging.StreamHandler, Events):
+    def __init__(self, stream=None):
+        logging.StreamHandler.__init__(self=self, stream=stream)
+        Events.__init__(self=self, events=('onHandle'))
+
+    def handle(self, record: LogRecord) -> bool:
+        seh_pool.submit(lambda: self.onHandle(record))
+        return super().handle(record)
 
 
 class CustomFormatter(logging.Formatter):
@@ -40,7 +54,7 @@ class CustomFormatter(logging.Formatter):
     @staticmethod
     def getLoggerFor(name: str):
         if CustomFormatter.handler is None:
-            consHand = logging.StreamHandler()
+            consHand = StreamEventHandler() # logging.StreamHandler()
             consHand.setLevel(level=CustomFormatter.use_log_level)
             consHand.setFormatter(CustomFormatter())
             CustomFormatter.handler = consHand
