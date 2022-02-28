@@ -191,6 +191,8 @@ class Configurator:
         # by the ButtonAndLeds instance.
         self.ctrl.on_button += button_callback
 
+        self.logger.handlers[0].onHandle += lambda **kwargs: self.ctrl.burnLed(led=leds['led-green'], burn_for=0.25)
+
         return self
     
     def setupCalendar(self):
