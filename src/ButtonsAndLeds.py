@@ -75,6 +75,10 @@ class ButtonsAndLeds(Events):
             return f
         else:
             return self._led_tpes[led.pin].submit(temp, duration)
+    
+    def switchLed(self, led: Led, on: bool=True):
+        GPIO.output(led.pin, GPIO.HIGH if on else GPIO.LOW)
+        return self
 
     def burnLed(self, led: Led, burn_for: float=None) -> Future:
         def temp():
