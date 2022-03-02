@@ -2,6 +2,7 @@ import datetime
 import pytz
 import requests
 import jsons
+from time import sleep
 from dateutil import tz
 from typing import Any, Callable
 from src.CustomFormatter import CustomFormatter
@@ -126,10 +127,16 @@ class IntervalCalendar:
         def getCalText():
             # Then we have to re-fetch this calendar.
             self.logger.debug(f'Downloading events for calendar "{self.name}".')
-            res = requests.get(url=self.url)
-            if res.status_code != 200:
-                raise Exception(f'Cannot fetch ical, status={res.status_code}')
-            return res.text
+            retries = 10
+            while retries > 0:
+                res = requests.get(url=self.url)
+                if res.status_code == 200:
+                    return res.text
+                sleep(secs=2.0)
+                retries -= 1
+            
+            self.logger.error(f'Cannot fetch ical for "{self.name}", status={res.status_code}')
+            return '' # return empty text, so the others may work.
         
         def destroyCalText(cal: str):
             self.logger.debug(f'Resetting calendar "{self.name}" now after a timeout of {format(self.interval, ".2f")} seconds.')
