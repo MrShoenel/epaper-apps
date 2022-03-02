@@ -154,21 +154,26 @@ class Configurator:
         return self
 
     def setupBtnLedControl(self):
-        self.logger.info('Setting up Button- and Led controls.')
         self.ctrl = ButtonsAndLeds()
+        g = self.config['general']
 
-        for c in self.config['inputs']:
-            self.ctrl.addButton(pin=c['pin'], name=c['name'], bounce_time=c['bounce_time'])
+        if g['inputs_enabled']:
+            self.logger.info('Setting up all input controls.')
+            for c in self.config['inputs']:
+                self.ctrl.addButton(pin=c['pin'], name=c['name'], bounce_time=c['bounce_time'])
         
         leds: Dict[str, Led] = {}
-        for c in self.config['outputs']:
-            leds[c['name']] = self.ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
+        if g['outputs_enabled']:
+            self.logger.info('Setting up all output controls.')
+            for c in self.config['outputs']:
+                leds[c['name']] = self.ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
         
         def button_callback(btn: Button):
             if self.epaperStateMachine.busy:
                 self.logger.debug('The ePaperStateMachine is currently busy. Ignoring button press.')
-                # Flash the red LED for some time
-                self.ctrl.blinkLed(led=leds['led-red'], freq=10, duration=3)
+                if 'led-red' in leds.keys():
+                    # Flash the red LED for some time
+                    self.ctrl.blinkLed(led=leds['led-red'], freq=10, duration=3)
                 return self
 
             # find associated config:
