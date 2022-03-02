@@ -14,6 +14,7 @@ from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
 from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
 from src.Api import Api
+from src.ePaper import ePaper
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
 from src.ScreenshotMaker import ScreenshotMaker
@@ -288,7 +289,16 @@ class Configurator:
         return self
     
     @property
-    def useScreenshotService(self):
+    def calibrateEpaperOnStart(self) -> bool:
+        return self.config['general']['calibrate_epaper_on_start']
+    
+    def calibrateEpaper(self):
+        e = ePaper()
+        e.calibrate()
+        return self
+    
+    @property
+    def useScreenshotService(self) -> bool:
         return self.config['general']['use_screenshot_service']
     
     def setupScreenshotService(self):
