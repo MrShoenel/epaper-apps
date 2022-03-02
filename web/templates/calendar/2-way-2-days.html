@@ -28,10 +28,10 @@
 
     <div style="width: 800px; height: 480px; border: 0px solid #000;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 35px 1fr; gap: 0px; width: 100%; height: 100%; overflow: hidden;">
-					  <div id="header-tomorrow" style="grid-column: 1; grid-row: 1;"></div>
-						<div id="header-overmorrow" style="grid-column: 2; grid-row: 1;"></div>
-						<div id="events-tomorrow" style="grid-column: 1; grid-row: 2;"></div>
-						<div id="events-overmorrow" style="grid-column: 2; grid-row: 2;"></div>
+        <div id="header-tomorrow" style="grid-column: 1; grid-row: 1;"></div>
+        <div id="header-overmorrow" style="grid-column: 2; grid-row: 1;"></div>
+        <div id="events-tomorrow" style="grid-column: 1; grid-row: 2;"></div>
+        <div id="events-overmorrow" style="grid-column: 2; grid-row: 2;"></div>
         </div>
     </div>
     <script type="text/javascript">
@@ -69,13 +69,13 @@
             resolve();
         });
 
-				$tomorrow = $('div#events-tomorrow');
-				$overmorrow = $('div#events-overmorrow')
+        const $tomorrow = $('div#events-tomorrow');
+        const $overmorrow = $('div#events-overmorrow')
 
-				await waitForElemWidth($tomorrow);
-				await waitForElemWidth($overmorrow);
+        await waitForElemWidth($tomorrow);
+        await waitForElemWidth($overmorrow);
         await waitForFont('div#events-tomorrow');
-				await waitForFont('div#events-overmorrow');
+        await waitForFont('div#events-overmorrow');
 
         const pad10 = s => {
             if (`${s}`.length == 1) {
@@ -84,7 +84,7 @@
             return s;
         };
 
-				const preprocessEvents = (evts, time) => evts.map(e => {
+        const preprocessEvents = (evts, time) => evts.map(e => {
             if (minDuration !== null && e.duration === null) {
                 e.duration = minDuration;
             }
@@ -117,8 +117,8 @@
         }).sort((a, b) => a.start.ts - b.start.ts);
 
 
-				events_tomorrow = preprocessEvents(events_tomorrow, time_tomorrow);
-				events_overmorrow = preprocessEvents(events_overmorrow, time_overmorrow);
+        events_tomorrow = preprocessEvents(events_tomorrow, time_tomorrow);
+        events_overmorrow = preprocessEvents(events_overmorrow, time_overmorrow);
 
         
         const renderEventsForDay = (evts, time, $container) => {
@@ -231,7 +231,7 @@
                 $('<div/>').text('Nothing planned!').css({
                     position: 'absolute',
                     top: '150px',
-                    left: `${$container.width() / 2}px`,
+                    left: `${$container.width() / 2 + $container.offset().left}px`,
                     width: '300px',
                     marginLeft: '-150px',
                     fontSize: '48px',
@@ -251,26 +251,26 @@
             );
         };
 
-				if (events_tomorrow.length > 0) {
-					renderEventsForDay(events_tomorrow.slice(0), time_tomorrow, $tomorrow);
-				} else {
-					renderNoEventsToday($tomorrow);
-				}
+        if (events_tomorrow.length > 0) {
+            renderEventsForDay(events_tomorrow.slice(0), time_tomorrow, $tomorrow);
+        } else {
+            renderNoEventsToday($tomorrow);
+        }
 
-				if (events_overmorrow.length > 0) {
-					renderEventsForDay(events_overmorrow.slice(0), time_overmorrow, $overmorrow);
-				} else {
-					renderNoEventsToday($overmorrow);
-				}
+        if (events_overmorrow.length > 0) {
+            renderEventsForDay(events_overmorrow.slice(0), time_overmorrow, $overmorrow);
+        } else {
+            renderNoEventsToday($overmorrow);
+        }
 
 
-				const renderHeader = ($container, time) => {
-					let $span = $('<span/>').text(`${pad10(time.day)}. ${month_names[time.month - 1]}`)
-					let $h1 = $('<h1/>').text(`${day_names[time.iso_weekday - 1]},`).append($span).appendTo($container);
-				};
+        const renderHeader = ($container, time) => {
+            let $span = $('<span/>').text(`${pad10(time.day)}. ${month_names[time.month - 1]}`)
+            let $h1 = $('<h1/>').text(`${day_names[time.iso_weekday - 1]},`).append($span).appendTo($container);
+        };
 
-				renderHeader($('div#header-tomorrow'), time_tomorrow);
-				renderHeader($('div#header-overmorrow'), time_overmorrow);
+        renderHeader($('div#header-tomorrow'), time_tomorrow);
+        renderHeader($('div#header-overmorrow'), time_overmorrow);
     });
     </script>
 </body>
