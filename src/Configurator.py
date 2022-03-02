@@ -294,7 +294,10 @@ class Configurator:
     
     def calibrateEpaper(self):
         e = ePaper()
+        start = timer()
+        self.logger.debug('Starting e-paper calibration.')
         e.calibrate()
+        self.logger.debug(f'Finished e-paper calibration after {format(timer() - start, ".2f")} seconds.')
         return self
     
     @property
