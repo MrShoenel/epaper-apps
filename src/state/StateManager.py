@@ -41,7 +41,7 @@ class StateManager(ABC, Events):
     def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         self._semaphore.acquire()
         self.logger.debug(f'Firing event: beforeInit, before initializing state "{state_to}".')
-        self._tpe.submit(lambda: self.beforeInit(sm=self, state_from=state_from, state_to=state_to, transition=transition))
+        self._tpe.submit(lambda: self.beforeInit(sm=self, state_from=state_from, state_to=state_to, transition=transition, kwargs=kwargs))
 
         self._unsetTimer()
 
