@@ -97,7 +97,6 @@ class Configurator:
 
             # We'll register our own callback for general actions, whenever there is
             # a transition.
-            # self.epaperStateMachine.beforeInit += self.beforeInitCallback
             self.epaperStateMachine.beforeInit += lambda **kwargs: self._tpe.submit(self.beforeInitCallback, **kwargs)
 
             # The LCD is controlled solely by the e-paper, as it depends on
@@ -134,7 +133,8 @@ class Configurator:
 
                 args = action['args']
                 led = self.ctrl.getLed(name=action['use_output'])
-                duration = self.epaperStateMachine.lastDuration(state_to=state_to)
+                with_clear = 'timeout' in kwargs # only clear on timer-type transitions
+                duration = self.epaperStateMachine.lastDuration(state_to=state_to, with_clear=with_clear)
                 if type(args['duration']) is float:
                     duration = args['duration']
                 if args['activity'] == 'burn':
