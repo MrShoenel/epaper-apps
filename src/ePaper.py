@@ -79,11 +79,11 @@ class ePaper():
         black = Image.new('1', (800, 480), 'black')
 
         for _ in range(cycles):
-            self._display(black, white)
-            self._display(black, white)
-            self._display(white, black)
-            self._display(white, white)
+            self._display(black_img=black, red_img=white, sleep_after=False)
+            self._display(black_img=black, red_img=white, sleep_after=False)
+            self._display(black_img=white, red_img=black, sleep_after=False)
+            self._display(black_img=white, red_img=white, sleep_after=False)
 
-        self.logger.info(f'Calibrated e-paper display using {cycles} cycles.')
+        self.logger.info(f'Calibrated e-paper display using {cycles} cycle(s).')
         return self
 
