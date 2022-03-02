@@ -1,5 +1,6 @@
 from threading import Semaphore, Timer
 from typing import Callable, TypeVar, Generic, Any
+from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
 
 
@@ -44,12 +45,13 @@ class SelfResetLazy(Generic[T]):
             self._semaphore.acquire()
             if self._has_val:
                 if callable(self.fnDestroyVal):
+                    self.logger.debug(f'Attempting to destroy the value by calling "fnDestroyVal()".')
                     self.fnDestroyVal(self._val) # Pass in the current value
                 self._val = None
                 self._has_val = False
         except Exception as e:
             if handle_ex:
-                self.logger.error(f'Unsetting the value caused an exception: {str(e)}')
+                self.logger.error(f'Unsetting the value using "fnDestroyVal()" caused an exception: {str(e)}')
             else:
                 raise e
         finally:
@@ -63,6 +65,7 @@ class SelfResetLazy(Generic[T]):
             self._timer = None
 
         if type(self._resetAfter) is float and self._resetAfter > 0.0:
+            self.logger.debug(f'Setting timer for automatic destruction of value after {format(self._resetAfter, ".2f")} seconds.')
             self._timer = Timer(interval=self._resetAfter, function=self.unsetValue)
             self._timer.start()
         return self
@@ -80,9 +83,15 @@ class SelfResetLazy(Generic[T]):
         try:
             self._semaphore.acquire()
             if not self._has_val:
+                start = timer()
+                self.logger.debug(f'Calling "fnCreateVal()" to lazily produce value.')
                 self._val = self.fnCreateVal()
                 self._has_val = True
+                self.logger.debug(f'"fnCreateVal()" took {format(timer() - start, ".2f")} seconds to produce a value.')
                 self._setTimer()
             return self._val
+        except Exception as e:
+            self.logger.error(f'Cannot lazily produce value. Exception was: {str(e)}')
+            raise e
         finally:
             self._semaphore.release()
