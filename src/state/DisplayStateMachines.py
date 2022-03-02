@@ -40,7 +40,7 @@ class ePaperStateMachine(StateManager):
             return 30.0 # The default duration if we don't know so far
         return mean(list(q))
 
-    def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
+    def _finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         self._busy = True
         self._semaphore_finalize.acquire()
         # activating a state means to display its rendered images on the e-paper.
@@ -150,7 +150,7 @@ class TextLcdStateMachine(StateManager):
             return self._apps[name]
         raise Exception(f'No app with name "{name}" registered.')
 
-    def finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
+    def _finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         """
         Here we'll just activate the correct app.
         """
