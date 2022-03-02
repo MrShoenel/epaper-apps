@@ -21,12 +21,24 @@ from src.SelfResetLazy import SelfResetLazy
 from os.path import join, abspath
 from threading import Semaphore, Timer
 from flask import render_template
+from requests.packages.urllib3.util.retry import Retry
 
 if os.name == 'posix':
     import RPi.GPIO as GPIO
     from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
     atexit.register(lambda: GPIO.cleanup())
 
+
+
+
+retry_strategy = Retry(
+    total=3,
+    status_forcelist=[429, 500, 502, 503, 504],
+    backoff_factor=1)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+http = requests.Session()
+http.mount("https://", adapter)
+http.mount("http://", adapter)
     
 
 
@@ -282,7 +294,7 @@ class Configurator:
         self.logger.info('Setting up a ScreenshotMaker for internal API.')
         destroy_after = self.config['general']['destroy_screenshot_service_after']
         
-        semaphore = Semaphore(1) # Only one screenshot at a time!
+        semaphore = Semaphore(1) # To prevent destruction while in use.
 
         def create_ssm() -> ScreenshotMaker:
             start = timer()
@@ -319,7 +331,7 @@ class Configurator:
                 
                 return 'OK', 200
             except Exception as e:
-                return 'ERROR', 500
+                return f'ERROR: {str(e)}', 500
             finally:
                 semaphore.release()
 
@@ -331,8 +343,12 @@ class Configurator:
     
     def _setScreenTimer(self, url: str, interval: int):
         def temp():
-            requests.get(url=url)
-            self._setScreenTimer(url=url, interval=interval)
+            try:
+                http.get(url=url)
+            except Exception:
+                self.logger.error(f'Cannot get URL {url} -- all retries exhausted.')
+            finally:
+                self._setScreenTimer(url=url, interval=interval)
         timer = Timer(interval=interval, function=temp)
         timer.start()
 
@@ -358,6 +374,10 @@ class Configurator:
         return self.config['general']
 
     def getScreenConfig(self, name: str):
+        """
+        Returns the config of a single screen by name, and also adds
+        a URL to it, based on the API's host and port.
+        """
         if not name in self.config['screens']:
             raise Exception(f'There is no configured screen with the name "{name}".')
         conf = self.config['screens'][name]
