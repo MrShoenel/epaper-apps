@@ -2,11 +2,8 @@ import datetime
 import pytz
 import requests
 import jsons
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from dateutil import tz
 from typing import Any, Callable
-from threading import Timer, Semaphore
 from src.CustomFormatter import CustomFormatter
 from datetime import date, datetime, timedelta
 from icalendar import Calendar, Event, Todo
@@ -14,15 +11,6 @@ from recurring_ical_events import of
 from src.SelfResetLazy import SelfResetLazy
 
 
-
-retry_strategy = Retry(
-    total=10,
-    status_forcelist=[429, 500, 502, 503, 504],
-    backoff_factor=1)
-adapter = HTTPAdapter(max_retries=retry_strategy)
-http = requests.Session()
-http.mount("https://", adapter)
-http.mount("http://", adapter)
 
 
 def ifelse(cond, fnTrue: Callable[[], Any], iffalse):
@@ -138,7 +126,7 @@ class IntervalCalendar:
         def getCalText():
             # Then we have to re-fetch this calendar.
             self.logger.debug(f'Downloading events for calendar "{self.name}".')
-            res = http.get(url=self.url)
+            res = requests.get(url=self.url)
             if res.status_code != 200:
                 raise Exception(f'Cannot fetch ical, status={res.status_code}')
             return res.text
