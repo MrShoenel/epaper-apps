@@ -9,7 +9,8 @@ T = TypeVar('T')
 
 
 class SelfResetLazy(Generic[T]):
-    def __init__(self, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any]=None, resetAfter: float=None) -> None:
+    def __init__(self, resource_name: str, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any]=None, resetAfter: float=None) -> None:
+        self.resource_name = resource_name
         self._val: T = None
         self._has_val = False
         self._semaphore = Semaphore(1)
@@ -19,7 +20,8 @@ class SelfResetLazy(Generic[T]):
         self._resetAfter = resetAfter
         self._timer: Timer = None
 
-        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
+        self.logger = CustomFormatter.getLoggerFor(
+            f'{self.__class__.__name__}({resource_name})')
     
     @property
     def resetAfter(self):

@@ -326,7 +326,7 @@ class Configurator:
                 semaphore.release()
                 self.logger.debug('ScreenshotMaker was destroyed.')
         
-        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=destroy_ssm, resetAfter=float(destroy_after))
+        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=destroy_ssm, resetAfter=float(destroy_after), resource_name='SSM')
 
         def temp(which: str):
             try:

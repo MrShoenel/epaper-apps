@@ -147,7 +147,7 @@ class IntervalCalendar:
             self.logger.debug(f'Resetting calendar "{self.name}" now after a timeout of {format(self.interval, ".2f")} seconds.')
 
         self.cal_text: SelfResetLazy[str] = SelfResetLazy(
-            fnCreateVal=getCalText, fnDestroyVal=destroyCalText, resetAfter=float(interval))
+            fnCreateVal=getCalText, fnDestroyVal=destroyCalText, resetAfter=float(interval), resource_name=f'Cal:{self.name}')
 
     @property
     def isCached(self):
