@@ -1,4 +1,3 @@
-from datetime import timedelta
 from src.state.StateManager import StateManager
 from src.ePaper import ePaper
 from src.lcd.TextLCD import TextLCD
@@ -35,8 +34,8 @@ class ePaperStateMachine(StateManager):
     def busy(self) -> bool:
         return self._busy
 
-    def lastDuration(self, state_to: str) -> float:
-        q = self._last_durations[state_to]
+    def lastDuration(self, state_to: str, with_clear: bool) -> float:
+        q = self._last_durations[f'{state_to}_{with_clear}']
         if len(q) == 0:
             return 30.0 # The default duration if we don't know so far
         return mean(list(q))
@@ -50,10 +49,13 @@ class ePaperStateMachine(StateManager):
         # If we also use an LCD, we may also show some info there.
         data_folder = self._config['general']['data_folder'][os.name]
 
+        # kwargs will be the arguments from the transition.
+        clear = 'timeout' in kwargs # was a timer-type transition
 
-        if not state_to in self._last_durations.keys():
+
+        if not f'{state_to}_{clear}' in self._last_durations.keys():
             # 3 is enough to more quickly react to recent changes.
-            self._last_durations[state_to] = deque(maxlen=3)
+            self._last_durations[f'{state_to}_{clear}'] = deque(maxlen=3)
 
         fp_black = None
         fp_red = None
@@ -72,7 +74,7 @@ class ePaperStateMachine(StateManager):
             done = False
             def progress():
                 num_updates = 100
-                wait_total = self.lastDuration(state_to=state_to)
+                wait_total = self.lastDuration(state_to=state_to, with_clear=clear)
                 wait_frac = wait_total / num_updates
                 start = timer()
 
@@ -91,10 +93,10 @@ class ePaperStateMachine(StateManager):
             while retries >= 0:
                 try:
                     start_write = timer()
-                    ePaper.display(black_img=blackimg, red_img=redimg)
+                    ePaper.display(black_img=blackimg, red_img=redimg, clear_before=clear)
 
                     duration = timer() - start_write
-                    self._last_durations[state_to].append(duration)
+                    self._last_durations[f'{state_to}_{clear}'].append(duration)
                     self.logger.debug(f'Writing took {format(duration, ".2f")} seconds.')
                     self._state = state_to
                     break
