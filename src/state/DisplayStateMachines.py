@@ -13,7 +13,6 @@ from typing import Dict
 from statistics import mean
 from timeit import default_timer as timer
 from time import sleep
-from threading import Semaphore
 from fasteners import InterProcessLock
 
 
@@ -27,7 +26,6 @@ class ePaperStateMachine(StateManager):
         self._retry_delay = self._stateConfig['retries']['delay']
         # Used to synchronize state activations, as they are long-running and expensive
         self._busy = False
-        self._semaphore_finalize = Semaphore(1)
         self._last_durations: Dict[str, deque] = {}
     
     @property
@@ -42,7 +40,6 @@ class ePaperStateMachine(StateManager):
 
     def _finalize(self, state_to: str, state_from: str, transition: str, **kwargs):
         self._busy = True
-        self._semaphore_finalize.acquire()
         # activating a state means to display its rendered images on the e-paper.
         # This happens outside of this application, and we rely on the images
         # being present at this point.
@@ -115,7 +112,6 @@ class ePaperStateMachine(StateManager):
             if not fp_red is None and not fp_red.closed:
                 fp_red.close()
             lock.release()
-            self._semaphore_finalize.release()
             self._busy = False
 
         # Before releasing, wait a few seconds so it won't be triggered too often.
