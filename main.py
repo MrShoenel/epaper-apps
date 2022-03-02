@@ -8,6 +8,8 @@ if c.useScreenshotService:
     c.setupScreenshotService()
     c.setupScreenIntervals()
 c.startApi(blocking=False)
+if c.calibrateEpaperOnStart:
+    c.calibrateEpaper()
 c.setupStateMachines()
 if os.name == 'posix':
     c.setupBtnLedControl()
