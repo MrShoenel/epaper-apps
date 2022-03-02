@@ -159,21 +159,27 @@ class IntervalCalendar:
         events = []
 
         for event in cal.walk("VEVENT"):
+            if not event.has_key('dtend'):
+                continue
+
             end = event.get('dtend')
-            if end:
-                copied_event = Event()
-                copied_event.add(name='X-CALENDARNAME', value=self.name)
-                if 'RRULE' in event:
-                    copied_event.add(name='X-ISRECURRENT', value=True)
-                
-                for attr in event:
-                    if type(event[attr]) is list:
-                        for element in event[attr]:
-                            copied_event.add(attr, element)
-                    else:
-                        copied_event.add(attr, event[attr])
-                
-                events.append(copied_event)
+            copied_event = Event()
+            copied_event.add(name='X-CALENDARNAME', value=self.name)
+
+            if 'RRULE' in event:
+                copied_event.add(name='X-ISRECURRENT', value=True)
+            elif type(min_date) is datetime and compare_datetime(end.dt, min_date) == -1:
+                # Not recurring and too old, skip:
+                continue
+
+            for attr in event:
+                if type(event[attr]) is list:
+                    for element in event[attr]:
+                        copied_event.add(attr, element)
+                else:
+                    copied_event.add(attr, event[attr])
+            
+            events.append(copied_event)
         
         return events
     
