@@ -2,7 +2,6 @@ import os
 from PIL import Image
 from src.CustomFormatter import CustomFormatter
 from threading import Timer
-from random import uniform
 
 if os.name == 'posix':
     from src.epd7in5b_V2 import EPD, epdconfig
@@ -15,14 +14,15 @@ class ePaper():
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
     @staticmethod
-    def display(black_img: Image, red_img):
+    def display(black_img: Image, red_img, clear_before: bool=False):
         e = ePaper()
-        e._display(black_img=black_img, red_img=red_img, clear_before=None, sleep_after=False)
-        del e
+        e._display(black_img=black_img, red_img=red_img, clear_before=clear_before, sleep_after=False)
+        e.__del__() # will make it sleep
         return None
     
     def __del__(self):
         try:
+            self.logger.debug('Sending e-paper display to sleep.')
             self.epaper.sleep()
         except Exception as e:
             self.logger.warning(f'The e-paper had an exception while attempting to sleep: ' + str(e))
@@ -45,15 +45,14 @@ class ePaper():
             timer.start()
 
         try:
-            was_inited = self._inited
             if not self._inited:
                 self.epaper.init()
                 self._inited = True
             
-            if uniform(0,1) > 2/3:
+            if clear_before:
                 self.logger.debug('Clearing e-paper display.')
                 self.epaper.Clear()
-            
+
             self.epaper.display(
                 imageblack=self.epaper.getbuffer(black_img),
                 imagered=self.epaper.getbuffer(red_img))
