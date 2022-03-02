@@ -17,7 +17,7 @@ class ePaper():
     def display(black_img: Image, red_img, clear_before: bool=False):
         e = ePaper()
         e._display(black_img=black_img, red_img=red_img, clear_before=clear_before, sleep_after=False)
-        e.__del__() # will make it sleep
+        # When 'e' is destructed, __del__() will make the display sleep.
         return None
     
     def __del__(self):
