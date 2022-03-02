@@ -132,54 +132,29 @@ class IntervalCalendar:
         self.url = url
         self.interval = interval
         self.tz_indef = tz_indef
-        self.cal_text: str = None
-        self.semaphore = Semaphore(value=1)
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
-        self._timer: Timer = None
-        if self.interval > 0:
-            self._startTimer()
-    
-    def _stopTimer(self):
-        if type(self._timer) is Timer and self._timer.is_alive():
-            self._timer.cancel()
-            self._timer = None
-        return self
-
-    def _startTimer(self):
-        def resetCal():
-            self.logger.debug(f'Resetting calendar "{self.name}" now after a timeout of {format(self.interval, ".2f")} seconds.')
-            self.cal_text = None
-            self._startTimer() # re-start timer
-
-        self._stopTimer()
-        self._timer = Timer(interval=float(self.interval), function=resetCal)
-        self._timer.start()
-        return self
-
-    def isCached(self):
-        return type(self.cal_text) is str
-    
-    def _getCalText(self):
-        """This is a synchronized method.
-        """
-        self.semaphore.acquire()
-        try:
-            if not self.isCached():
-                # Then we have to re-fetch this calendar.
-                self.logger.debug(f'Downloading events for calendar "{self.name}".')
-                res = http.get(url=self.url)
-                if res.status_code != 200:
-                    raise Exception(f'Cannot fetch ical, status={res.status_code}')
-                self.cal_text = res.text
-        finally:
-            self.semaphore.release()
+        def getCalText():
+            # Then we have to re-fetch this calendar.
+            self.logger.debug(f'Downloading events for calendar "{self.name}".')
+            res = http.get(url=self.url)
+            if res.status_code != 200:
+                raise Exception(f'Cannot fetch ical, status={res.status_code}')
+            return res.text
         
-        return self.cal_text
+        def destroyCalText(cal: str):
+            self.logger.debug(f'Resetting calendar "{self.name}" now after a timeout of {format(self.interval, ".2f")} seconds.')
+
+        self.cal_text: SelfResetLazy[str] = SelfResetLazy(
+            fnCreateVal=getCalText, fnDestroyVal=destroyCalText, resetAfter=float(interval))
+
+    @property
+    def isCached(self):
+        return self.cal_text.hasValue
     
-    def getEvents(self) -> list[Event]:
-        cal = Calendar.from_ical(self._getCalText())
+    def getEvents(self, min_date: datetime=None) -> list[Event]:
+        cal = Calendar.from_ical(self.cal_text.value)
 
         events = []
 
