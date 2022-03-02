@@ -8,9 +8,10 @@ from dateutil import tz
 from typing import Any, Callable
 from threading import Timer, Semaphore
 from src.CustomFormatter import CustomFormatter
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from icalendar import Calendar, Event, Todo
 from recurring_ical_events import of
+from src.SelfResetLazy import SelfResetLazy
 
 
 
@@ -28,6 +29,20 @@ def ifelse(cond, fnTrue: Callable[[], Any], iffalse):
     if cond:
         return fnTrue()
     return iffalse
+
+def to_datetime(dt):
+    if type(dt) is date:
+        return datetime.combine(dt, datetime.min.time())
+    return dt
+
+def compare_datetime(a, b):
+    a = to_datetime(a).astimezone(pytz.utc)
+    b = to_datetime(b).astimezone(pytz.utc)
+    if a < b:
+        return -1
+    elif a == b:
+        return 0
+    return 1
 
 
 class DataEvent:
