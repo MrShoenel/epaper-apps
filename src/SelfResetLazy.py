@@ -1,5 +1,6 @@
 from threading import Semaphore, Timer
 from typing import Callable, TypeVar, Generic, Any
+from src.CustomFormatter import CustomFormatter
 
 
 T = TypeVar('T')
@@ -7,33 +8,63 @@ T = TypeVar('T')
 
 
 class SelfResetLazy(Generic[T]):
-    def __init__(self, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any], resetAfter: float) -> None:
+    def __init__(self, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any]=None, resetAfter: float=None) -> None:
         self._val: T = None
         self._has_val = False
         self._semaphore = Semaphore(1)
 
         self.fnCreateVal = fnCreateVal
         self.fnDestroyVal = fnDestroyVal
-        self.resetAfter = resetAfter
+        self._resetAfter = resetAfter
         self._timer: Timer = None
+
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
-    def unsetValue(self):
+    @property
+    def resetAfter(self):
+        try:
+            self._semaphore.acquire()
+            return self._resetAfter
+        finally:
+            self._semaphore.release()
+    
+    @resetAfter.setter
+    def resetAfter(self, value: float=None):
+        try:
+            self._semaphore.acquire()
+            self._resetAfter = value
+            self._setTimer() # Conditionally re-sets a timer
+        finally:
+            self._semaphore.release()
+        
+        return self
+    
+    def unsetValue(self, handle_ex: bool=True):
         try:
             self._semaphore.acquire()
             if self._has_val:
-                self.fnDestroyVal(self._val) # Pass in the current value
+                if callable(self.fnDestroyVal):
+                    self.fnDestroyVal(self._val) # Pass in the current value
                 self._val = None
                 self._has_val = False
-                self._setTimer()
+        except Exception as e:
+            if handle_ex:
+                self.logger.error(f'Unsetting the value caused an exception: {str(e)}')
+            else:
+                raise e
         finally:
             self._semaphore.release()
 
         return self
-
     
     def _setTimer(self):
-        self._timer = Timer(interval=self.resetAfter, function=self.unsetValue)
-        self._timer.start()
+        if type(self._timer) is Timer and self._timer.is_alive():
+            self._timer.cancel()
+            self._timer = None
+
+        if type(self._resetAfter) is float and self._resetAfter > 0.0:
+            self._timer = Timer(interval=self._resetAfter, function=self.unsetValue)
+            self._timer.start()
         return self
     
     @property
