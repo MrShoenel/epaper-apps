@@ -183,14 +183,35 @@ class IntervalCalendar:
         
         return events
     
-    def getTodos(self) -> list[Todo]:
-        cal = Calendar.from_ical(self._getCalText())
+    def getTodos(self, min_date: datetime=None, include_indef: bool=True, include_undone: bool=True) -> list[Todo]:
+        cal = Calendar.from_ical(self.cal_text.value)
 
         todos = []
 
         for todo in cal.walk('VTODO'):
+            is_done = todo.get('status') == 'COMPLETED'
+            if is_done:
+                continue # Skip done tasks
+
             copied_todo = Todo()
             copied_todo.add(name='X-CALENDARNAME', value=self.name)
+
+            if not include_undone:
+                has_start = todo.has_key('dtstart') # most tasks have 'due' or no date
+                has_due = todo.has_key('due')
+                is_indef = not has_start and not has_due
+
+                if is_indef:
+                    if not include_indef and not (include_undone and not is_done):
+                        continue
+                elif type(min_date) is datetime:
+                    start = todo.get('dtstart').dt
+                    due = todo.get('due').dt
+                    point = start if not type(due) is datetime else due
+                    if type(start) is datetime and type(due) is datetime:
+                        point = max(start, due)
+                    if compare_datetime(point, min_date) == -1:
+                        continue # Too old this one
 
             for attr in todo:
                 if type(todo[attr]) is list:
@@ -241,17 +262,19 @@ class CalendarMerger:
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
         self.calendars: dict[str, IntervalCalendar] = {}
-        if not cal_config is None:
-            for conf in cal_config['merge']:
-                self.addCalendar(IntervalCalendar(**conf))
+        for conf in cal_config['merge']:
+            self.addCalendar(IntervalCalendar(**conf))
+        
+        self.include_indefinite = cal_config['tasks']['include_indefinite']
+        self.include_overdue_undone = cal_config['tasks']['include_overdue_undone']
     
     def addCalendar(self, intervalCal: IntervalCalendar):
         self.logger.debug(f'Adding IntervalCalendar "{intervalCal.name}"')
         self.calendars[intervalCal.name] = intervalCal
         return self
     
-    def getMergedCalendar(self, events=True) -> Calendar:
-        if not all([cal.isCached() for cal in self.calendars.values()]):
+    def getMergedCalendar(self, events: bool=True, min_date: datetime=None) -> Calendar:
+        if not all([cal.isCached for cal in self.calendars.values()]):
             self.merged_evt = None
             self.merged_todo = None
 
@@ -261,13 +284,13 @@ class CalendarMerger:
         else:
             if type(self.merged_todo) is Calendar:
                 return self.merged_todo
-        
+ 
         c = Calendar()
         c.add('prodid', '-//icalcombine//NONSGML//EN')
         c.add('version', '2.0')
 
         for cal in self.calendars.values():
-            items = cal.getEvents() if events else cal.getTodos()
+            items = cal.getEvents(min_date=min_date) if events else cal.getTodos(min_date=min_date, include_indef=self.include_indefinite, include_undone=self.include_overdue_undone)
             for item in items:
                 c.add_component(item)
         
@@ -280,7 +303,7 @@ class CalendarMerger:
     def todosBetween(self, start, stop, include_indefinite=True, include_overdue_undone=True) -> list[DataEvent]:
         todos = []
 
-        for item in self.getMergedCalendar(events=False).subcomponents:
+        for item in self.getMergedCalendar(events=False, min_date=start).subcomponents:
             todo = DataEvent.fromVtodo(item)
             if todo.is_complete:
                 continue
@@ -301,7 +324,7 @@ class CalendarMerger:
             point: datetime = todo.end if has_end else todo.start
 
             is_indef = (not has_start) and (not has_end)
-            is_overdue_undone = type(point) is datetime and not todo.is_complete and point < start
+            is_overdue_undone = type(point) is datetime and not todo.is_complete and compare_datetime(point, start) == -1
 
             if is_indef:
                 if include_indefinite:
@@ -321,7 +344,7 @@ class CalendarMerger:
     def eventsBetween(self, start, stop) -> list[DataEvent]:
         return list(map(
             lambda vevt: DataEvent.fromVevent(vevt),
-            of(self.getMergedCalendar(events=True)).between(start, stop)))
+            of(self.getMergedCalendar(events=True, min_date=start)).between(start, stop)))
     
     def itemsToday(self, events=True, add_days=0) -> list[DataEvent]:
         """
@@ -364,8 +387,8 @@ class CalendarMerger:
             # today is NOT monday, let's go back and find the dates before
             begin = begin - timedelta(days=1)
         
-        for i in range(int(num_weeks * 7)):
-            wd = Weekday(month=begin.month, week=begin.isocalendar().week, day=begin.day, weekday=begin.isoweekday(), before_today=begin < today, is_today=begin.month == today.month and begin.day == today.day)
+        for _ in range(int(num_weeks * 7)):
+            wd = Weekday(month=begin.month, week=begin.isocalendar().week, day=begin.day, weekday=begin.isoweekday(), before_today=compare_datetime(begin, today) == -1, is_today=begin.month == today.month and begin.day == today.day)
 
             wd.addEvents(self.eventsBetween(
                 start=begin, stop=begin + timedelta(days=1) - timedelta(microseconds=1)))
