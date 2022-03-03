@@ -1,7 +1,9 @@
+import os
 import datetime
 import pytz
 import requests
 import jsons
+from os.path import exists
 from time import sleep
 from dateutil import tz
 from typing import Any, Callable
@@ -116,27 +118,37 @@ class DataEvent:
 
 class IntervalCalendar:
 
-    def __init__(self, name: str, url: str, interval: int, tz_indef: datetime.tzinfo=None):
+    def __init__(self, name: str, url: str, interval: int, data_folder: str, tz_indef: datetime.tzinfo=None):
         self.name = name
         self.url = url
         self.interval = interval
+        self.data_folder = data_folder
         self.tz_indef = tz_indef
 
-        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
+        self.logger = CustomFormatter.getLoggerFor(f'{self.__class__.__name__}({name})')
 
         def getCalText():
             # Then we have to re-fetch this calendar.
             self.logger.debug(f'Downloading events for calendar "{self.name}".')
+            ical_file = f'{self.data_folder}{os.sep}{self.name}.ical'
             retries = 10
             while retries > 0:
                 res = requests.get(url=self.url)
                 if res.status_code == 200:
+                    # Buffer this calendar to disk:
+                    print(res.text, file=ical_file)
                     return res.text
                 sleep(secs=2.0)
                 retries -= 1
             
             self.logger.error(f'Cannot fetch ical for "{self.name}", status={res.status_code}')
-            return '' # return empty text, so the others may work.
+
+            if exists(ical_file):
+                # Try to read previously buffered file:
+                with open(file=ical_file, mode='r') as fp:
+                    return fp.read()
+            else:
+                return '' # return empty text, so the others may work.
         
         def destroyCalText(cal: str):
             self.logger.debug(f'Resetting calendar "{self.name}" now after a timeout of {format(self.interval, ".2f")} seconds.')
@@ -250,7 +262,7 @@ class Weekday:
 
 class CalendarMerger:
 
-    def __init__(self, cal_config=None):
+    def __init__(self, data_folder: str, cal_config=None):
         self.merged_evt: Calendar = None
         self.merged_todo: Calendar = None
 
@@ -258,7 +270,7 @@ class CalendarMerger:
 
         self.calendars: dict[str, IntervalCalendar] = {}
         for conf in cal_config['merge']:
-            self.addCalendar(IntervalCalendar(**conf))
+            self.addCalendar(IntervalCalendar(data_folder=data_folder, **conf))
         
         self.include_indefinite = cal_config['tasks']['include_indefinite']
         self.include_overdue_undone = cal_config['tasks']['include_overdue_undone']

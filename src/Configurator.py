@@ -213,7 +213,7 @@ class Configurator:
         return self
     
     def setupCalendar(self):
-        self.calendar = CalendarMerger(cal_config=self.config['calendar'])
+        self.calendar = CalendarMerger(cal_config=self.config['calendar'], data_folder=self.data_folder)
         
         self.logger.info(f'Finished setting up {self.calendar.__class__.__name__}.')
 
