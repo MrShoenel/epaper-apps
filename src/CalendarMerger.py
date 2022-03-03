@@ -133,15 +133,18 @@ class IntervalCalendar:
             ical_file = f'{self.data_folder}{os.sep}{self.name}.ical'
             retries = 10
             while retries > 0:
-                res = requests.get(url=self.url)
-                if res.status_code == 200:
-                    # Buffer this calendar to disk:
-                    with open(file=ical_file, mode='w', encoding='utf-8') as fp:
-                        print(res.text, file=fp)
-                    return res.text
-                sleep(secs=2.0)
                 retries -= 1
-            
+                try:
+                    res = requests.get(url=self.url)
+                    if res.status_code == 200:
+                        # Buffer this calendar to disk:
+                        with open(file=ical_file, mode='w', encoding='utf-8') as fp:
+                            print(res.text, file=fp)
+                        return res.text
+                    sleep(secs=2.0)
+                except Exception:
+                    pass # Explicitly ignore, as we have our retries.
+
             self.logger.error(f'Cannot fetch ical for "{self.name}", status={res.status_code}')
 
             if exists(ical_file):
