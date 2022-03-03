@@ -136,7 +136,8 @@ class IntervalCalendar:
                 res = requests.get(url=self.url)
                 if res.status_code == 200:
                     # Buffer this calendar to disk:
-                    print(res.text, file=ical_file)
+                    with open(file=ical_file, mode='w', encoding='utf-8') as fp:
+                        print(res.text, file=fp)
                     return res.text
                 sleep(secs=2.0)
                 retries -= 1
@@ -145,8 +146,10 @@ class IntervalCalendar:
 
             if exists(ical_file):
                 # Try to read previously buffered file:
-                with open(file=ical_file, mode='r') as fp:
-                    return fp.read()
+                with open(file=ical_file, mode='r', encoding='utf-8') as fp:
+                    temp = fp.read()
+                    self.logger.warn('Returning cached (potentially) old calendar.')
+                    return temp
             else:
                 return '' # return empty text, so the others may work.
         
