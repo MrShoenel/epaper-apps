@@ -316,35 +316,24 @@ class Configurator:
             ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
             self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
             return ssm
-        
-        # Don't auto-reset!
-        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=None, resource_name='SSM')
 
-        reset_timer: Timer = None
-        def resetSSM():
+        def destroy_ssm(ssm: ScreenshotMaker):
             self.logger.debug('Destroying the ScreenshotMaker!')
             try:
                 semaphore.acquire()
-                self.ssm.unsetValue()
+                ssm.__del__()
             finally:
                 semaphore.release()
                 self.logger.debug('ScreenshotMaker was destroyed.')
-
-            if type(reset_timer) == Timer and reset_timer.is_alive():
-                reset_timer.cancel()
-            
-            reset_timer = Timer(interval=destroy_after, function=resetSSM)
-            reset_timer.start()
         
-        resetSSM()
+        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=destroy_ssm, resetAfter=float(destroy_after), resource_name='SSM')
 
-
-        def takeScreenshot(which: str):
+        def temp(which: str):
             try:
-                semaphore.acquire()
                 conf = self.getScreenConfig(name=which)
                 start = timer()
                 self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
+                semaphore.acquire()
                 blackimg, redimg = self.ssm.value.screenshot(**conf)
 
                 with open(file=abspath(join(self.data_folder, f'{which}_b.png')), mode='wb') as fp:
@@ -360,7 +349,7 @@ class Configurator:
             finally:
                 semaphore.release()
 
-        self.api.addRoute(route='/screens/<which>', fn=takeScreenshot)
+        self.api.addRoute(route='/screens/<which>', fn=temp)
 
         self.logger.info(f'Finished setting up ScreenshotMaker.')
         
