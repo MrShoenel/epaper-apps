@@ -316,24 +316,21 @@ class Configurator:
             ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
             self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
             return ssm
-
-        def destroy_ssm(ssm: ScreenshotMaker):
-            self.logger.debug('Destroying the ScreenshotMaker!')
-            try:
-                semaphore.acquire()
-                ssm.__del__()
-            finally:
-                semaphore.release()
-                self.logger.debug('ScreenshotMaker was destroyed.')
         
-        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=destroy_ssm, resetAfter=float(destroy_after), resource_name='SSM')
+        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=float(destroy_after), resource_name='SSM')
+
+        def destroy_lock():
+            semaphore.acquire()
+            semaphore.release()
+
+        self.ssm.beforeUnset += destroy_lock
 
         def temp(which: str):
             try:
+                semaphore.acquire()
                 conf = self.getScreenConfig(name=which)
                 start = timer()
                 self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
-                semaphore.acquire()
                 blackimg, redimg = self.ssm.value.screenshot(**conf)
 
                 with open(file=abspath(join(self.data_folder, f'{which}_b.png')), mode='wb') as fp:
