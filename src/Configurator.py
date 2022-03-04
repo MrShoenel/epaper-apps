@@ -320,7 +320,7 @@ class Configurator:
         # Don't auto-reset!
         self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=None, resource_name='SSM')
 
-        timer: Timer = None
+        reset_timer: Timer = None
         def resetSSM():
             self.logger.debug('Destroying the ScreenshotMaker!')
             try:
@@ -330,11 +330,11 @@ class Configurator:
                 semaphore.release()
                 self.logger.debug('ScreenshotMaker was destroyed.')
 
-            if type(timer) == Timer and timer.is_alive():
-                timer.cancel()
+            if type(reset_timer) == Timer and reset_timer.is_alive():
+                reset_timer.cancel()
             
-            timer = Timer(interval=destroy_after, function=resetSSM)
-            timer.start()
+            reset_timer = Timer(interval=destroy_after, function=resetSSM)
+            reset_timer.start()
         
         resetSSM()
 
