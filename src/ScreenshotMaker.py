@@ -1,17 +1,13 @@
 import io
 import os
-from src.CustomFormatter import CustomFormatter
 from time import sleep
 from PIL import Image #, ImageOps, ImageEnhance
 from selenium import webdriver
-import signal
 
 
 class ScreenshotMaker:
 
     def __init__(self, driver: str='gecko'):
-        self.driver_name = driver
-
         if driver == 'gecko':
             options = webdriver.FirefoxOptions()
             options.add_argument('--headless')
@@ -27,38 +23,13 @@ class ScreenshotMaker:
             self.driver = webdriver.Chrome(options=chrome_options)
         else:
             raise Exception(f'Driver "{driver}" not known.')
-        
-        self.driver.set_page_load_timeout(120.0)
-        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
     def __del__(self):
-        pid = -1
-        if self.driver_name == 'gecko':
-            pid = int(self.driver.capabilities['moz:processID'])
-        else:
-            pass # not supported currently
-
         try:
             self.driver.close()
-        except:
-            self.logger.debug('driver.close() threw.')
-            pass # don't care at all, we just want it gone!
-
-        # Have separate try-block in case close() throws:
-        try:
             self.driver.quit()
-        except:
-            self.logger.debug('driver.quit() threw.')
-            pass
-
-        if pid > 0:
-            self.logger.debug(f'Also attempting to kill process with ID=${pid}.')
-            sig = signal.SIGTERM if os.name == 'nt' else signal.SIGKILL
-            try:
-                os.kill(pid, sig)
-            except:
-                pass
-
+        except Exception:
+            pass # don't care at all, we just want it gone!
 
 
     def setViewportSize(self, width, height):
