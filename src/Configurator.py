@@ -316,24 +316,35 @@ class Configurator:
             ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
             self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
             return ssm
+        
+        # Don't auto-reset!
+        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=None, resource_name='SSM')
 
-        def destroy_ssm(ssm: ScreenshotMaker):
+        timer: Timer = None
+        def resetSSM():
             self.logger.debug('Destroying the ScreenshotMaker!')
             try:
                 semaphore.acquire()
-                ssm.__del__()
+                self.ssm.unsetValue()
             finally:
                 semaphore.release()
                 self.logger.debug('ScreenshotMaker was destroyed.')
-        
-        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=destroy_ssm, resetAfter=float(destroy_after), resource_name='SSM')
 
-        def temp(which: str):
+            if type(timer) == Timer and timer.is_alive():
+                timer.cancel()
+            
+            timer = Timer(interval=destroy_after, function=resetSSM)
+            timer.start()
+        
+        resetSSM()
+
+
+        def takeScreenshot(which: str):
             try:
+                semaphore.acquire()
                 conf = self.getScreenConfig(name=which)
                 start = timer()
                 self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
-                semaphore.acquire()
                 blackimg, redimg = self.ssm.value.screenshot(**conf)
 
                 with open(file=abspath(join(self.data_folder, f'{which}_b.png')), mode='wb') as fp:
@@ -349,7 +360,7 @@ class Configurator:
             finally:
                 semaphore.release()
 
-        self.api.addRoute(route='/screens/<which>', fn=temp)
+        self.api.addRoute(route='/screens/<which>', fn=takeScreenshot)
 
         self.logger.info(f'Finished setting up ScreenshotMaker.')
         
