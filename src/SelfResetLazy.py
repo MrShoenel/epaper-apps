@@ -114,8 +114,10 @@ class LazyResource(SelfResetLazy):
     
 
     def obtain(self) -> T:
+        if self.hasValue:
+            self._semaphoreRes.acquire()
         # Conditionally and synchronized produces the value.
-        val = super().value
+        val = self.value
         self._semaphoreRes.acquire()
         self.logger.debug('Obtained value.')
         return val
@@ -142,4 +144,10 @@ class LazyResource(SelfResetLazy):
     
     @property
     def value(self) -> T:
-        raise Exception('Consume a resource by calling obtain(), then return it using recover()')
+        had_val = self.hasValue
+
+        val = super().value
+        if not had_val:
+            self._semaphoreRes.release()
+
+        return val
