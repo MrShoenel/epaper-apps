@@ -419,11 +419,17 @@ class CalendarMerger:
         cal_evts = self.getMergedCalendar(events=True)
         cal_todo = self.getMergedCalendar(events=False)
 
-        # Create a merged calendar with events AND todos:
+        c = Calendar()
+        c.add('prodid', '-//icalcombine//NONSGML//EN')
+        c.add('version', '2.0')
+
+        # Create a new merged calendar with events AND todos:
+        for comp in cal_evts.subcomponents:
+            c.add_component(comp)
         for comp in cal_todo.subcomponents:
-            cal_evts.add_component(comp)
-        
-        return cal_evts.to_ical(sorted=True)
+            c.add_component(comp)
+
+        return c.to_ical(sorted=True)
     
     def apiCal(self):
         return self.__str__(), 200, {'Content-Type': 'text/calendar; charset=utf-8'}
