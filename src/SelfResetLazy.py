@@ -1,5 +1,5 @@
 from threading import Semaphore, Timer
-from typing import Callable, TypeVar, Generic, Any
+from typing import Callable, TypeVar, Generic, Any, Self
 from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
 
@@ -97,3 +97,49 @@ class SelfResetLazy(Generic[T]):
             raise e
         finally:
             self._semaphore.release()
+
+
+class LazyResource(SelfResetLazy):
+    def __init__(self, resource_name: str, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any] = None, resetAfter: float = None) -> None:
+        super().__init__(resource_name, fnCreateVal, fnDestroyVal, resetAfter)
+        self._semaphoreRes = Semaphore(0)
+    
+    @property
+    def available(self) -> bool:
+        return self._semaphoreRes._value == 1
+    
+    @property
+    def busy(self) -> bool:
+        return not self.available
+    
+
+    def obtain(self) -> T:
+        # Conditionally and synchronized produces the value.
+        val = super().value
+        self._semaphoreRes.acquire()
+        self.logger.debug('Obtained value.')
+        return val
+    
+    def recover(self, resource: T) -> Self[T]:
+        if not self.busy:
+            raise Exception('The resource was not previously obtained, not sure what you are trying to return.')
+
+        if not self.hasValue:
+            raise Exception('You cannot return a value that was not previously obtained.')
+
+        if not self.value is resource:
+            raise Exception('You must return the same value that was previously obtained.')
+        
+        self.logger.debug('Recovered value.')
+        self._semaphoreRes.release()
+        return self
+    
+    def unsetValue(self, handle_ex: bool = True) -> Self[T]:
+        if self.hasValue:
+            # Reduce count in semaphore to 0:
+            self._semaphoreRes.acquire()
+        return super().unsetValue(handle_ex)
+    
+    @property
+    def value(self) -> T:
+        raise Exception('Consume a resource by calling obtain(), then return it using recover()')
