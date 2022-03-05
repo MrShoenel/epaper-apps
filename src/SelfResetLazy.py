@@ -1,5 +1,5 @@
 from threading import Semaphore, Timer
-from typing import Callable, TypeVar, Generic, Any, Self
+from typing import Callable, TypeVar, Generic, Any
 from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
 
@@ -120,7 +120,7 @@ class LazyResource(SelfResetLazy):
         self.logger.debug('Obtained value.')
         return val
     
-    def recover(self, resource: T) -> Self[T]:
+    def recover(self, resource: T):
         if not self.busy:
             raise Exception('The resource was not previously obtained, not sure what you are trying to return.')
 
@@ -134,7 +134,7 @@ class LazyResource(SelfResetLazy):
         self._semaphoreRes.release()
         return self
     
-    def unsetValue(self, handle_ex: bool = True) -> Self[T]:
+    def unsetValue(self, handle_ex: bool = True):
         if self.hasValue:
             # Reduce count in semaphore to 0:
             self._semaphoreRes.acquire()
