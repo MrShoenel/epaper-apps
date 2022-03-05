@@ -6,7 +6,7 @@ import jsons
 from os.path import exists
 from time import sleep
 from dateutil import tz
-from typing import Any, Callable
+from typing import Any, Callable, Union
 from src.CustomFormatter import CustomFormatter
 from datetime import date, datetime, timedelta
 from icalendar import Calendar, Event, Todo
@@ -166,18 +166,18 @@ class IntervalCalendar:
     def isCached(self):
         return self.cal_text.hasValue
     
-    def getEvents(self, min_date: datetime=None) -> list[Event]:
-        cal = Calendar.from_ical(self.cal_text.value)
+    @staticmethod
+    def filterEvents(events: list[Event], cal_name: str=None, min_date: datetime=None):
+        filtered = []
 
-        events = []
-
-        for event in cal.walk("VEVENT"):
+        for event in events:
             if not event.has_key('dtend'):
                 continue
 
             end = event.get('dtend')
             copied_event = Event()
-            copied_event.add(name='X-CALENDARNAME', value=self.name)
+            if type(cal_name) is str:
+                copied_event.add(name='X-CALENDARNAME', value=cal_name)
 
             if 'RRULE' in event:
                 copied_event.add(name='X-ISRECURRENT', value=True)
@@ -192,22 +192,27 @@ class IntervalCalendar:
                 else:
                     copied_event.add(attr, event[attr])
             
-            events.append(copied_event)
+            filtered.append(copied_event)
         
-        return events
+        return filtered
     
-    def getTodos(self, min_date: datetime=None, include_indef: bool=True, include_undone: bool=True) -> list[Todo]:
-        cal = Calendar.from_ical(self.cal_text.value)
+    def getEvents(self, min_date: datetime=None) -> list[Event]:
+        cal: Calendar = Calendar.from_ical(self.cal_text.value)
 
-        todos = []
-
-        for todo in cal.walk('VTODO'):
+        return IntervalCalendar.filterEvents(events=cal.walk('VEVENT'), cal_name=self.name, min_date=min_date)
+    
+    @staticmethod
+    def filterTodos(todos: list[Todo], cal_name: str=None, min_date: datetime=None, include_indef: bool=True, include_undone: bool=True) -> list[Todo]:
+        filtered = []
+        
+        for todo in todos:
             is_done = todo.get('status') == 'COMPLETED'
             if is_done:
                 continue # Skip done tasks
 
             copied_todo = Todo()
-            copied_todo.add(name='X-CALENDARNAME', value=self.name)
+            if type(cal_name) is str:
+                copied_todo.add(name='X-CALENDARNAME', value=cal_name)
 
             if not include_undone:
                 has_start = todo.has_key('dtstart') # most tasks have 'due' or no date
@@ -233,9 +238,14 @@ class IntervalCalendar:
                 else:
                     copied_todo.add(attr, todo[attr])
             
-            todos.append(copied_todo)
+            filtered.append(copied_todo)
         
-        return todos
+        return filtered
+    
+    def getTodos(self, min_date: datetime=None, include_indef: bool=True, include_undone: bool=True) -> list[Todo]:
+        cal: Calendar = Calendar.from_ical(self.cal_text.value)
+
+        return IntervalCalendar.filterTodos(todos=cal.walk('VTODO'), cal_name=self.name, min_date=min_date, include_indef=include_indef, include_undone=include_undone)
 
 
 
@@ -269,9 +279,6 @@ class Weekday:
 class CalendarMerger:
 
     def __init__(self, data_folder: str, cal_config=None):
-        self.merged_evt: Calendar = None
-        self.merged_todo: Calendar = None
-
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
         self.calendars: dict[str, IntervalCalendar] = {}
@@ -280,39 +287,50 @@ class CalendarMerger:
         
         self.include_indefinite = cal_config['tasks']['include_indefinite']
         self.include_overdue_undone = cal_config['tasks']['include_overdue_undone']
+
+        def merge_calendars(events: bool=True) -> Union[list[Event], list[Todo]]:
+            items: list[DataEvent] = []
+            for cal in self.calendars.values():
+                if events:
+                    items += cal.getEvents()
+                else:
+                    items += cal.getTodos(include_indef=self.include_indefinite, include_undone=self.include_overdue_undone)
+            return items
+
+
+        self._merged_evts: SelfResetLazy[list[Event]] = SelfResetLazy(resource_name='merged_events', fnCreateVal=lambda: merge_calendars(events=True), resetAfter=None)
+        self._merged_todos: SelfResetLazy[list[Todo]] = SelfResetLazy(resource_name='merged_todos', fnCreateVal=lambda: merge_calendars(events=False), resetAfter=None)
     
     def addCalendar(self, intervalCal: IntervalCalendar):
         self.logger.debug(f'Adding IntervalCalendar "{intervalCal.name}"')
         self.calendars[intervalCal.name] = intervalCal
         return self
-    
-    def getMergedCalendar(self, events: bool=True, min_date: datetime=None) -> Calendar:
-        if not all([cal.isCached for cal in self.calendars.values()]):
-            self.merged_evt = None
-            self.merged_todo = None
 
+    def _getMergedItems(self, events: bool=True) -> Union[list[Event], list[Todo]]:
+        if not all([cal.isCached for cal in self.calendars.values()]):
+            self._merged_evts.unsetValue()
+            self._merged_todos.unsetValue()
+        
         if events:
-            if type(self.merged_evt) is Calendar:
-                return self.merged_evt
-        else:
-            if type(self.merged_todo) is Calendar:
-                return self.merged_todo
- 
+            return self._merged_evts.value
+        return self._merged_todos.value
+
+    def getMergedCalendar(self, events: bool=True, min_date: datetime=None) -> Calendar:
         c = Calendar()
         c.add('prodid', '-//icalcombine//NONSGML//EN')
         c.add('version', '2.0')
 
-        for cal in self.calendars.values():
-            items = cal.getEvents(min_date=min_date) if events else cal.getTodos(min_date=min_date, include_indef=self.include_indefinite, include_undone=self.include_overdue_undone)
-            for item in items:
-                c.add_component(item)
-        
+        items: Union[list[Event], list[Todo]] = []
         if events:
-            self.merged_evt = c
+            items = IntervalCalendar.filterEvents(events=self._getMergedItems(events=True), min_date=min_date)
         else:
-            self.merged_todo = c
+            items = IntervalCalendar.filterTodos(todos=self._getMergedItems(events=False), min_date=min_date, include_indef=self.include_indefinite, include_undone=self.include_overdue_undone)
+        
+        for item in items:
+            c.add_component(item)
+        
         return c
-    
+
     def todosBetween(self, start, stop, include_indefinite=True, include_overdue_undone=True) -> list[DataEvent]:
         todos = []
 
@@ -416,18 +434,18 @@ class CalendarMerger:
         return weekdays
 
     def __str__(self):
-        cal_evts = self.getMergedCalendar(events=True)
-        cal_todo = self.getMergedCalendar(events=False)
+        items: Union[list[Event], list[Todo]] = []
+
+        items += self._getMergedItems(events=True)
+        items += self._getMergedItems(events=False)
 
         c = Calendar()
         c.add('prodid', '-//icalcombine//NONSGML//EN')
         c.add('version', '2.0')
 
         # Create a new merged calendar with events AND todos:
-        for comp in cal_evts.subcomponents:
-            c.add_component(comp)
-        for comp in cal_todo.subcomponents:
-            c.add_component(comp)
+        for item in items:
+            c.add_component(item)
 
         return c.to_ical(sorted=True)
     
