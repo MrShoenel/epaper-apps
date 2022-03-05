@@ -18,9 +18,9 @@ from src.ePaper import ePaper
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
 from src.ScreenshotMaker import ScreenshotMaker
-from src.SelfResetLazy import SelfResetLazy
+from src.SelfResetLazy import SelfResetLazy, LazyResource
 from os.path import join, abspath
-from threading import Semaphore, Timer
+from threading import Timer
 from flask import render_template
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -80,7 +80,7 @@ class Configurator:
         self.hasTextLcd: bool = False
         self.textLcdStateMachine: TextLcdStateMachine = None
         self.ctrl: ButtonsAndLeds = None
-        self.ssm: SelfResetLazy[ScreenshotMaker] = None
+        self.lazy_ssm: LazyResource[ScreenshotMaker] = None
     
 
     def fromJson(path: str='config.json'):
@@ -307,8 +307,6 @@ class Configurator:
     def setupScreenshotService(self):
         self.logger.info('Setting up a ScreenshotMaker for internal API.')
         destroy_after = self.config['general']['destroy_screenshot_service_after']
-        
-        semaphore = Semaphore(1) # To prevent destruction while in use.
 
         def create_ssm() -> ScreenshotMaker:
             start = timer()
@@ -317,21 +315,17 @@ class Configurator:
             self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
             return ssm
         
-        self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=float(destroy_after), resource_name='SSM')
-
-        def destroy_lock(*args):
-            semaphore.acquire()
-            semaphore.release()
-
-        self.ssm.beforeUnset += destroy_lock
+        self.lazy_ssm = LazyResource(resource_name='SSM', fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=float(destroy_after))
 
         def temp(which: str):
+            res: ScreenshotMaker = None
+
             try:
-                semaphore.acquire()
+                res = self.lazy_ssm.obtain()
                 conf = self.getScreenConfig(name=which)
                 start = timer()
                 self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
-                blackimg, redimg = self.ssm.value.screenshot(**conf)
+                blackimg, redimg = res.screenshot(**conf)
 
                 with open(file=abspath(join(self.data_folder, f'{which}_b.png')), mode='wb') as fp:
                     blackimg.save(fp)
@@ -344,7 +338,7 @@ class Configurator:
             except Exception as e:
                 return f'ERROR: {str(e)}', 500
             finally:
-                semaphore.release()
+                self.lazy_ssm.recover(res)
 
         self.api.addRoute(route='/screens/<which>', fn=temp)
 
