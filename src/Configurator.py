@@ -338,7 +338,8 @@ class Configurator:
             except Exception as e:
                 return f'ERROR: {str(e)}', 500
             finally:
-                self.lazy_ssm.recover(res)
+                if type(res) is ScreenshotMaker:
+                    self.lazy_ssm.recover(res)
 
         self.api.addRoute(route='/screens/<which>', fn=temp)
 

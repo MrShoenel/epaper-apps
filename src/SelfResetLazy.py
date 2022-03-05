@@ -114,10 +114,14 @@ class LazyResource(SelfResetLazy):
     
 
     def obtain(self) -> T:
-        if self.hasValue:
-            self._semaphoreRes.acquire()
-        # Conditionally and synchronized produces the value.
-        val = self.value
+        had_value = self.hasValue
+
+        val = super().value
+        if not had_value:
+            # Increase as a new initial value was just produced!
+            self._semaphoreRes.release()
+        
+        self._semaphoreRes.acquire()
         self.logger.debug('Obtained value.')
         return val
     
@@ -128,7 +132,7 @@ class LazyResource(SelfResetLazy):
         if not self.hasValue:
             raise Exception('You cannot return a value that was not previously obtained.')
 
-        if not self.value is resource:
+        if not super().value is resource:
             raise Exception('You must return the same value that was previously obtained.')
         
         self.logger.debug('Recovered value.')
@@ -143,10 +147,4 @@ class LazyResource(SelfResetLazy):
     
     @property
     def value(self) -> T:
-        had_val = self.hasValue
-
-        val = super().value
-        if not had_val:
-            self._semaphoreRes.release()
-
-        return val
+        raise Exception('In LazyResource use obtain() and recover() to manage the resource')
