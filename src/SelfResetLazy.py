@@ -2,16 +2,14 @@ from threading import Semaphore, Timer
 from typing import Callable, TypeVar, Generic, Any
 from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
-from events import Events
 
 
 T = TypeVar('T')
 
 
 
-class SelfResetLazy(Generic[T], Events):
+class SelfResetLazy(Generic[T]):
     def __init__(self, resource_name: str, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any]=None, resetAfter: float=None) -> None:
-        Events.__init__(self=self, events=('beforeUnset',))
         self.resource_name = resource_name
         self._val: T = None
         self._has_val = False
@@ -45,15 +43,6 @@ class SelfResetLazy(Generic[T], Events):
         return self
     
     def unsetValue(self, handle_ex: bool=True):
-        try:
-            self.logger.debug('Triggering "beforeUnset" synchronously.')
-            self.beforeUnset(self)
-        except Exception as e:
-            if handle_ex:
-                self.logger.error(f'Triggering event "beforeUnset" caused an exception: {str(e)}')
-            else:
-                raise e
-
         try:
             self._semaphore.acquire()
             if self._has_val:
