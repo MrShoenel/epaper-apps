@@ -118,7 +118,6 @@ class LazyResource(SelfResetLazy):
             self._semaphoreRes.acquire()
         # Conditionally and synchronized produces the value.
         val = self.value
-        self._semaphoreRes.acquire()
         self.logger.debug('Obtained value.')
         return val
     
