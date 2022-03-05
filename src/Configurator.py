@@ -319,7 +319,7 @@ class Configurator:
         
         self.ssm = SelfResetLazy(fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=float(destroy_after), resource_name='SSM')
 
-        def destroy_lock():
+        def destroy_lock(*args):
             semaphore.acquire()
             semaphore.release()
 
