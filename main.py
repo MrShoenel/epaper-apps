@@ -7,6 +7,7 @@ c.setupCalendar()
 if c.useScreenshotService:
     c.setupScreenshotService()
     c.setupScreenIntervals()
+c.setupUserscreens()
 c.startApi(blocking=False)
 if c.calibrateEpaperOnStart:
     c.calibrateEpaper()

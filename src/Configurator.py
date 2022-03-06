@@ -24,6 +24,7 @@ from threading import Timer
 from flask import render_template
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from urllib.parse import urlencode
 
 if os.name == 'posix':
     import RPi.GPIO as GPIO
@@ -288,6 +289,23 @@ class Configurator:
 
         return self
     
+    def setupUserscreens(self):
+        def renderCreate():
+            return render_template(
+                'userscreen/create.html')
+
+        self.api.addRoute(route='/userscreen/create', fn=renderCreate)
+
+        def renderScreenshot(url, scroll_top, scroll_left, trans_x, trans_y, zoom, duration):
+            return render_template(
+                'userscreen/prepare.html',
+                url=url, scroll_top=scroll_top, scroll_left=scroll_left,
+                trans_x=trans_x, trans_y=trans_y, zoom=zoom)
+        
+        self.api.addRoute(route='/user/screenshot', fn=renderScreenshot)
+
+        return self
+    
     @property
     def calibrateEpaperOnStart(self) -> bool:
         return self.config['general']['calibrate_epaper_on_start']
@@ -317,14 +335,14 @@ class Configurator:
         
         self.res_ssm = SelfResetLazy(resource_name='SSM', fnCreateVal=create_ssm, fnDestroyVal=lambda ssm_atom: ssm_atom.obtain().__del__(), resetAfter=float(destroy_after))
 
-        def temp(which: str):
+        def temp(which: str, **kwargs):
             res_atom: AtomicResource[ScreenshotMaker] = None
             res: ScreenshotMaker = None
 
             try:
                 res_atom = self.res_ssm.value
                 res = res_atom.obtain()
-                conf = self.getScreenConfig(name=which)
+                conf = self.getScreenConfig(name=which, **kwargs)
                 start = timer()
                 self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
                 blackimg, redimg = res.screenshot(**conf)
@@ -335,6 +353,10 @@ class Configurator:
                     redimg.save(fp)
                 
                 self.logger.debug(f'Done taking screenshot of "{which}". It took {format(timer() - start, ".2f")} seconds.')
+
+                # Let's check if this was a userscreen:
+                if conf['category'] == 'user':
+                    self._tpe.submit(lambda: self.epaperStateMachine.activate(transition='show-userscreen', duration=float(conf['duration'])))
                 
                 return 'OK', 200
             except Exception as e:
@@ -372,6 +394,10 @@ class Configurator:
         keys = list(filter(lambda scr: scr != '_comment', self.config['screens'].keys()))
 
         for key, conf in zip(keys, [self.getScreenConfig(x) for x in keys]):
+            if not 'interval' in conf.keys():
+                self.logger.debug(f'Screen "{key}" has not interval and can only be triggered manually.')
+                continue
+
             self.logger.debug(f'Adding screenshot interval of {format(conf["interval"], ".2f")} seconds for screen "{key}".')
             self._setScreenTimer(url=f'http://{host}:{port}/screens/{key}', interval=conf['interval'])
         
@@ -381,7 +407,7 @@ class Configurator:
     def getGeneralConfig(self):
         return self.config['general']
 
-    def getScreenConfig(self, name: str):
+    def getScreenConfig(self, name: str, **url_args):
         """
         Returns the config of a single screen by name, and also adds
         a URL to it, based on the API's host and port.
@@ -395,5 +421,5 @@ class Configurator:
         if host == '0.0.0.0':
             host = '127.0.0.1'
         port = api['port']
-        conf['url'] = f'http://{host}:{port}/calendar/{name}'
+        conf['url'] = f'http://{host}:{port}/{conf["category"]}/{name}?{urlencode(url_args)}'
         return conf
