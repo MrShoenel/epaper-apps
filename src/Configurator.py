@@ -443,4 +443,4 @@ class Configurator:
             host = '127.0.0.1'
         port = api['port']
         conf['url'] = f'http://{host}:{port}/{conf["category"]}/{name}?{urlencode(url_args)}'
-        return conf
+        return conf | url_args
