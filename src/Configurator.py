@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 import calendar
 import pathlib
@@ -24,7 +25,7 @@ from threading import Timer
 from flask import render_template
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 if os.name == 'posix':
     import RPi.GPIO as GPIO
@@ -290,6 +291,26 @@ class Configurator:
         return self
     
     def setupUserscreens(self):
+        def renderIframe(url):
+            parsed = urlparse(url=url)
+            base = f'{parsed.scheme}://{parsed.netloc}'
+            text = requests.get(url).text
+            # Let's replace all relative links and sources with the URL's origin:
+            text = re.sub(pattern=r'src="/(?!/)', repl=f'src="{base}/', string=text)
+            text = re.sub(pattern=r'srcset="/(?!/)', repl=f'srcset="{base}/', string=text)
+            text = re.sub(pattern=r'href="/(?!/)', repl=f'href="{base}/', string=text)
+
+            text = re.sub(pattern=r'src="(?!(((http)|(//))))', repl=f'src="{base}/', string=text)
+            text = re.sub(pattern=r'srcset="(?!(((http)|(//))))', repl=f'srcset="{base}/', string=text)
+            text = re.sub(pattern=r'href="(?!(((http)|(//))))', repl=f'href="{base}/', string=text)
+
+            with open('C:\\temp\\bla.html', 'w', encoding='utf-8') as fp:
+                print(text, file=fp)
+
+            return text
+        
+        self.api.addRoute(route='/userscreen/iframe', fn=renderIframe)
+
         def renderCreate():
             return render_template(
                 'userscreen/create.html')
