@@ -129,11 +129,11 @@ class LazyResource(SelfResetLazy):
             had_value = self._has_val
 
             val = super().value
-            if not had_value:
-                # Increase as a new initial value was just produced!
-                self._semaphoreRes.release()
+            if had_value:
+                # If a new value was produced, keep semaphore at count=0.
+                # Otherwise, we should lock the resource
+                self._semaphoreRes.acquire()
 
-            self._semaphoreRes.acquire()
             self.logger.debug('Obtained value.')
             return val
         finally:
