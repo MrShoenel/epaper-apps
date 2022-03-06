@@ -18,7 +18,7 @@ from src.ePaper import ePaper
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
 from src.ScreenshotMaker import ScreenshotMaker
-from src.SelfResetLazy import SelfResetLazy, LazyResource
+from src.SelfResetLazy import SelfResetLazy, AtomicResource
 from os.path import join, abspath
 from threading import Timer
 from flask import render_template
@@ -80,7 +80,7 @@ class Configurator:
         self.hasTextLcd: bool = False
         self.textLcdStateMachine: TextLcdStateMachine = None
         self.ctrl: ButtonsAndLeds = None
-        self.lazy_ssm: LazyResource[ScreenshotMaker] = None
+        self.res_ssm: SelfResetLazy[AtomicResource[ScreenshotMaker]] = None
     
 
     def fromJson(path: str='config.json'):
@@ -308,20 +308,22 @@ class Configurator:
         self.logger.info('Setting up a ScreenshotMaker for internal API.')
         destroy_after = self.config['general']['destroy_screenshot_service_after']
 
-        def create_ssm() -> ScreenshotMaker:
+        def create_ssm() -> AtomicResource[ScreenshotMaker]:
             start = timer()
             self.logger.debug(f'Creating a ScreenshotMaker, it shall live for {format(destroy_after, ".2f")} seconds.')
             ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
             self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
-            return ssm
+            return AtomicResource(item=ssm)
         
-        self.lazy_ssm = LazyResource(resource_name='SSM', fnCreateVal=create_ssm, fnDestroyVal=lambda ssm: ssm.__del__(), resetAfter=float(destroy_after))
+        self.res_ssm = SelfResetLazy(resource_name='SSM', fnCreateVal=create_ssm, fnDestroyVal=lambda ssm_atom: ssm_atom.obtain().__del__(), resetAfter=float(destroy_after))
 
         def temp(which: str):
+            res_atom: AtomicResource[ScreenshotMaker] = None
             res: ScreenshotMaker = None
 
             try:
-                res = self.lazy_ssm.obtain()
+                res_atom = self.res_ssm.value
+                res = res_atom.obtain()
                 conf = self.getScreenConfig(name=which)
                 start = timer()
                 self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
@@ -339,7 +341,7 @@ class Configurator:
                 return f'ERROR: {str(e)}', 500
             finally:
                 if type(res) is ScreenshotMaker:
-                    self.lazy_ssm.recover(res)
+                    res_atom.recover(item=res)
 
         self.api.addRoute(route='/screens/<which>', fn=temp)
 
