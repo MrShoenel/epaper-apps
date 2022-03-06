@@ -83,7 +83,7 @@ class StateManager(ABC, Events):
     def availableTransitions(self):
         return list(filter(lambda t: t['from']==self.state or t['from']=='*', self._stateConfig['transitions']))
     
-    def activate(self, transition: str=None):
+    def activate(self, transition: str=None, **trans_args):
         """
         This method is supposed to be called by the user, in order to start (or
         activate) a transition by name.
@@ -108,6 +108,8 @@ class StateManager(ABC, Events):
             args = {}
             if 'args' in trans:
                 args = trans['args']
+            # Merge with given args, which have precedence!
+            args = args | trans_args
             return self._initState(
                 state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=args)
         finally:
