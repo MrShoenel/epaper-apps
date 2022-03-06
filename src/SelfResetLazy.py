@@ -102,12 +102,14 @@ class SelfResetLazy(Generic[T]):
 
 
 class AtomicResource(Generic[T]):
-    def __init__(self, item: T=None) -> None:
+    def __init__(self, resource_name: str=None, item: T=None) -> None:
         self._queue = Queue(maxsize=1)
+        self.resource_name = resource_name
         if not item is None:
             self.recover(item)
         
-        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
+        self.logger = CustomFormatter.getLoggerFor(
+            f'{self.__class__.__name__}({resource_name})')
 
     @property
     def available(self):

@@ -313,7 +313,7 @@ class Configurator:
             self.logger.debug(f'Creating a ScreenshotMaker, it shall live for {format(destroy_after, ".2f")} seconds.')
             ssm = ScreenshotMaker(driver=self.config['general']['screen_driver'])
             self.logger.debug(f'Done creating a ScreenshotMaker, it took {format(timer() - start, ".2f")} seconds.')
-            return AtomicResource(item=ssm)
+            return AtomicResource(item=ssm, resource_name='SSM')
         
         self.res_ssm = SelfResetLazy(resource_name='SSM', fnCreateVal=create_ssm, fnDestroyVal=lambda ssm_atom: ssm_atom.obtain().__del__(), resetAfter=float(destroy_after))
 
