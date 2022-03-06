@@ -317,11 +317,11 @@ class Configurator:
 
         self.api.addRoute(route='/userscreen/create', fn=renderCreate)
 
-        def renderScreenshot(url, scroll_top, scroll_left, trans_x, trans_y, zoom, duration):
+        def renderScreenshot(url, scroll_top, scroll_left, trans_x, trans_y, zoom, direct, duration):
             return render_template(
                 'userscreen/prepare.html',
                 url=url, scroll_top=scroll_top, scroll_left=scroll_left,
-                trans_x=trans_x, trans_y=trans_y, zoom=zoom)
+                trans_x=trans_x, trans_y=trans_y, direct=direct, zoom=zoom)
         
         self.api.addRoute(route='/user/screenshot', fn=renderScreenshot)
 

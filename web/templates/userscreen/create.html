@@ -17,12 +17,12 @@
 -->
 <body>
 	<div id="url">
-		<p><input type="text" placeholder="URL" style="width: 600px;" /><button id="go">Go</button></p>
+		<p><input type="text" placeholder="URL" style="width: 600px;" /><button id="go">Go</button><button id="go-direct">Go direct</button></p>
 	</div>
 
 	<div id="viewport" style="border: 2px solid magenta;">
 		<div id="wrapper">
-			<iframe style="width: 1200px;height: 10000px;border: none; padding: 0;margin: 0;display: block;overflow: hidden;" src="https://dict.cc"></iframe>
+			<iframe style="width: 1200px;height: 10000px;border: none; padding: 0;margin: 0;display: block;overflow: hidden;"></iframe>
 		</div>
 	</div>
 
@@ -144,9 +144,15 @@
 				height: $viewport.outerHeight(false) + scrollbarWidth + 'px'
 			});
 
+			let direct = false;
 			$('#go').click(() => {
+				direct = false;
 				const url = `${location.protocol}//${location.host}/userscreen/iframe?url=${$url.val()}`;
 				$iframe.attr('src', url);
+			});
+			$('#go-direct').click(() => {
+				direct = true;
+				$iframe.attr('src', $url.val());
 			});
 
 			let currentZoom = 1;
@@ -204,7 +210,7 @@
 			$('button[data-dur]').click(e => {
 				console.log($(e.target).attr('data-dur'));
 				// Let's create a URL!
-				const url = `${location.protocol}//${location.host}/screens/screenshot?duration=${$(e.target).attr('data-dur')}&scroll_top=${$wrapper.scrollTop()}&scroll_left=${$wrapper.scrollLeft()}&trans_x=${transX}&trans_y=${transY}&zoom=${currentZoom}&url=${$iframe.attr('src')}`;
+				const url = `${location.protocol}//${location.host}/screens/screenshot?duration=${$(e.target).attr('data-dur')}&scroll_top=${$wrapper.scrollTop()}&scroll_left=${$wrapper.scrollLeft()}&trans_x=${transX}&trans_y=${transY}&zoom=${currentZoom}&url=${$iframe.attr('src')}&direct=${direct}`;
 
 
 				if (confirm(`Press OK if you want to proceed taking a screenshot of: ${url}`)) {

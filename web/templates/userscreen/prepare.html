@@ -23,6 +23,7 @@
 		const _trans_x = parseInt({{ trans_x|tojson|safe }}, 10);
 		const _trans_y = parseInt({{ trans_y|tojson|safe }}, 10);
 		const _zoom = parseFloat({{ zoom|tojson|safe }});
+		const _direct = {{ direct|tojson|safe }}.toLowerCase() === 'true';
 	</script>
 
 	<div id="viewport" style="margin: 0;">
@@ -92,7 +93,8 @@
 				$wrapper[0].scrollBy(_scroll_left, _scroll_top);
 				$wrapper.css('transform', `scale(${_zoom}) translateX(${_trans_x}px) translateY(${_trans_y}px)`);
 			});
-			$i.attr('src', `${location.protocol}//${location.host}/userscreen/iframe?url=${_url}`);
+
+			$i.attr('src', _direct ? _url : `${location.protocol}//${location.host}/userscreen/iframe?url=${_url}`);
 		});
 	</script>
 </body>
