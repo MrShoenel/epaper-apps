@@ -17,7 +17,7 @@
 -->
 <body>
 	<div id="url">
-		<p><input type="text" placeholder="URL" style="width: 600px;" /><button>Go</button></p>
+		<p><input type="text" placeholder="URL" style="width: 600px;" /><button id="go">Go</button></p>
 	</div>
 
 	<div id="viewport" style="border: 2px solid magenta;">
@@ -133,7 +133,8 @@
 
 			const $viewport = $('div#viewport')
 			, $wrapper = $('div#wrapper')
-			, $iframe = $('iframe');
+			, $iframe = $('iframe')
+			, $url = $('input');
 
 			await waitForElemWidth($viewport);
 
@@ -143,11 +144,24 @@
 				height: $viewport.outerHeight(false) + scrollbarWidth + 'px'
 			});
 
+			$('#go').click(() => {
+				const url = `${location.protocol}//${location.host}/userscreen/iframe?url=${$url.val()}`;
+				$iframe.attr('src', url);
+			});
+
 			let currentZoom = 1;
 			let transX = 0, transY = 0;
+			const wrapWidth = $wrapper.outerWidth()
+			, wrapHeight = $wrapper.outerHeight();
 
 			const adjustWrapper = () => {
-				$wrapper.css('transform', `scale(${currentZoom}) translateX(${transX}px) translateY(${transY}px)`);
+				let h = currentZoom >= 1 ? wrapHeight : wrapHeight / currentZoom + 25;
+				let w = currentZoom >= 1 ? wrapWidth : wrapWidth / currentZoom + 25;
+				$wrapper.css({
+					transform: `scale(${currentZoom}) translateX(${transX}px) translateY(${transY}px)`,
+					width: `${w}px`,
+					height: `${h}px`
+				});
 			};
 
 			const move = (dir, by = 20) => {
@@ -172,8 +186,8 @@
 
 			const zoom = (plus, by = 0.05) => {
 				let val = currentZoom + (plus ? 1 : -1) * by;
-				if (val < 1) {
-					val = 1;
+				if (val < .1) {
+					val = .1;
 				}
 				currentZoom = val;
 				adjustWrapper();
@@ -182,7 +196,7 @@
 			$('#zoom-minus').click(() => zoom(false));
 			$('#zoom-plus').click(() => zoom(true));
 			
-			$('#zoom-reset').click(() => zoom(false, 1e10));
+			$('#zoom-reset').click(() => { currentZoom = 1; adjustWrapper(); });
 			$('#lr-reset').click(() => { transX = 0; adjustWrapper() });
 			$('#ud-reset').click(() => { transY = 0; adjustWrapper() });
 

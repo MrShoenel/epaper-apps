@@ -86,13 +86,13 @@
 
 			const $i = $('iframe');
 
-			$i.attr('src', _url);
 			$i.ready(async() => {
 				await timeout(500);
 
 				$wrapper[0].scrollBy(_scroll_left, _scroll_top);
 				$wrapper.css('transform', `scale(${_zoom}) translateX(${_trans_x}px) translateY(${_trans_y}px)`);
 			});
+			$i.attr('src', `${location.protocol}//${location.host}/userscreen/iframe?url=${_url}`);
 		});
 	</script>
 </body>
