@@ -102,49 +102,74 @@ class SelfResetLazy(Generic[T]):
 class LazyResource(SelfResetLazy):
     def __init__(self, resource_name: str, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any] = None, resetAfter: float = None) -> None:
         super().__init__(resource_name, fnCreateVal, fnDestroyVal, resetAfter)
-        self._semaphoreRes = Semaphore(0)
+        self._semaphoreRes = Semaphore(value=0)
+        self._semaphoreSync = Semaphore(value=1)
     
     @property
     def available(self) -> bool:
-        return self._semaphoreRes._value == 1
+        try:
+            self._semaphoreSync.acquire()
+            return self._semaphoreRes._value == 1
+        finally:
+            self._semaphoreSync.release()
     
     @property
     def busy(self) -> bool:
-        return not self.available
-    
+        try:
+            self._semaphoreSync.acquire()
+            return self._semaphoreRes._value == 0
+        finally:
+            self._semaphoreSync.release()
+
 
     def obtain(self) -> T:
-        had_value = self.hasValue
+        try:
+            self._semaphoreSync.acquire()
 
-        val = super().value
-        if not had_value:
-            # Increase as a new initial value was just produced!
-            self._semaphoreRes.release()
-        
-        self._semaphoreRes.acquire()
-        self.logger.debug('Obtained value.')
-        return val
+            had_value = self._has_val
+
+            val = super().value
+            if not had_value:
+                # Increase as a new initial value was just produced!
+                self._semaphoreRes.release()
+
+            self._semaphoreRes.acquire()
+            self.logger.debug('Obtained value.')
+            return val
+        finally:
+            self._semaphoreSync.release()
     
     def recover(self, resource: T):
-        if not self.busy:
-            raise Exception('The resource was not previously obtained, not sure what you are trying to return.')
+        try:
+            self._semaphoreSync.acquire()
 
-        if not self.hasValue:
-            raise Exception('You cannot return a value that was not previously obtained.')
+            if self._semaphoreRes._value == 1:
+                raise Exception('The resource was not previously obtained, not sure what you are trying to return.')
 
-        if not super().value is resource:
-            raise Exception('You must return the same value that was previously obtained.')
-        
-        self.logger.debug('Recovered value.')
-        self._semaphoreRes.release()
-        return self
-    
+            if not self._has_val:
+                raise Exception('You cannot return a value that was not previously obtained.')
+
+            if not super().value is resource:
+                raise Exception('You must return the same value that was previously obtained.')
+
+            self.logger.debug('Recovered value.')
+            self._semaphoreRes.release()
+            return self
+        finally:
+            self._semaphoreSync.release()
+
     def unsetValue(self, handle_ex: bool = True):
-        if self.hasValue:
-            # Reduce count in semaphore to 0:
-            self._semaphoreRes.acquire()
-        return super().unsetValue(handle_ex)
-    
+        try:
+            self._semaphoreSync.acquire()
+
+            if self.hasValue:
+                # Reduce count in semaphore to 0:
+                self._semaphoreRes.acquire()
+            return super().unsetValue(handle_ex)
+        finally:
+            self._semaphoreSync.release()
+
     @property
     def value(self) -> T:
-        raise Exception('In LazyResource use obtain() and recover() to manage the resource')
+        self.logger.warn(f'In {self.__class__.__name__} use obtain() and recover() to manage the resource. Forwarding this call now to obtain().')
+        return self.obtain()
