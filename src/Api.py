@@ -99,9 +99,13 @@ class Api:
     def addRoute(self, route, fn):
         if route in self.routes:
             raise Exception(f'The route {route} already exists.')
+        
+        def temp(**kwargs):
+            args = kwargs | request.args
+            return fn(**args)
 
         self.routes.add(route)
-        _api.add_url_rule(rule=route, view_func=fn)
+        _api.add_url_rule(rule=route, endpoint=route, view_func=temp)
 
         return self
 
