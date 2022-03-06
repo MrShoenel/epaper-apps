@@ -140,23 +140,18 @@ class LazyResource(SelfResetLazy):
             self._semaphoreSync.release()
     
     def recover(self, resource: T):
-        try:
-            self._semaphoreSync.acquire()
+        if self._semaphoreRes._value == 1:
+            raise Exception('The resource was not previously obtained, not sure what you are trying to return.')
 
-            if self._semaphoreRes._value == 1:
-                raise Exception('The resource was not previously obtained, not sure what you are trying to return.')
+        if not self._has_val:
+            raise Exception('You cannot return a value that was not previously obtained.')
 
-            if not self._has_val:
-                raise Exception('You cannot return a value that was not previously obtained.')
+        if not self._val is resource:
+            raise Exception('You must return the same value that was previously obtained.')
 
-            if not super().value is resource:
-                raise Exception('You must return the same value that was previously obtained.')
-
-            self.logger.debug('Recovered value.')
-            self._semaphoreRes.release()
-            return self
-        finally:
-            self._semaphoreSync.release()
+        self.logger.debug('Recovered value.')
+        self._semaphoreRes.release()
+        return self
 
     def unsetValue(self, handle_ex: bool = True):
         try:
