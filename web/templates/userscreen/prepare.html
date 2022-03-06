@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>User Screenshot</title>
+    <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="shortcut icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/default.less" />
+		<link rel="stylesheet/less" type="text/css" href="/web/assets/userscreen-make.less" />
+		<script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="/web/assets/less@4.js"></script>
+		<style>
+		</style>
+</head>
+<!--
+-->
+<body>
+	<script type="text/javascript">
+		const _url = {{ url|tojson|safe }};
+		const _scroll_top = parseInt({{ scroll_top|tojson|safe }}, 10);
+		const _scroll_left = parseInt({{ scroll_left|tojson|safe }}, 10);
+		const _trans_x = parseInt({{ trans_x|tojson|safe }}, 10);
+		const _trans_y = parseInt({{ trans_y|tojson|safe }}, 10);
+		const _zoom = parseFloat({{ zoom|tojson|safe }});
+	</script>
+
+	<div id="viewport" style="margin: 0;">
+		<div id="wrapper">
+			<iframe style="width: 1200px;height: 10000px;border: none; padding: 0;margin: 0;display: block;overflow: hidden;"></iframe>
+		</div>
+	</div>
+
+	
+
+	<script type="text/javascript">
+		$(document).ready(async() => {
+			const scrollbarWidth = (function getScrollbarWidth() {
+				// Creating invisible container
+				const outer = document.createElement('div');
+				outer.style.visibility = 'hidden';
+				outer.style.overflow = 'scroll'; // forcing scrollbar to appear
+				outer.style.msOverflowStyle = 'scrollbar'; // needed for WinJS apps
+				document.body.appendChild(outer);
+
+				// Creating inner element and placing it in the container
+				const inner = document.createElement('div');
+				outer.appendChild(inner);
+
+				// Calculating difference between container's full width and the child width
+				const scrollbarWidth = (outer.offsetWidth - inner.offsetWidth);
+
+				// Removing temporary elements from the DOM
+				outer.parentNode.removeChild(outer);
+
+				return scrollbarWidth;
+
+			})();
+
+			const timeout = ms => new Promise((resolve, reject) => {
+				setTimeout(resolve, ms)
+			});
+
+			const waitForElemWidth = $e => new Promise(async resolve => {
+				while (true) {
+					if ($e.innerWidth() === 0) {
+						await timeout(20)
+					} else {
+						break
+					}
+				}
+				resolve()
+			});
+
+			const $viewport = $('div#viewport')
+			, $wrapper = $('div#wrapper');
+
+			await waitForElemWidth($viewport);
+
+			// First, we should resize the viewport to include the scrollbars!
+			$viewport.css({
+				width: $viewport.outerWidth(false) + scrollbarWidth + 'px',
+				height: $viewport.outerHeight(false) + scrollbarWidth + 'px'
+			});
+
+
+			const $i = $('iframe');
+
+			$i.attr('src', _url);
+			$i.ready(async() => {
+				await timeout(500);
+
+				$wrapper[0].scrollBy(_scroll_left, _scroll_top);
+				$wrapper.css('transform', `scale(${_zoom}) translateX(${_trans_x}px) translateY(${_trans_y}px)`);
+			});
+		});
+	</script>
+</body>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>User Screenshot</title>
+    <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="shortcut icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/default.less" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/userscreen-make.less" />
+		<script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="/web/assets/less@4.js"></script>
+		<style>
+		</style>
+</head>
+<!--
+-->
+<body>
+	<div id="url">
+		<p><input type="text" placeholder="URL" style="width: 600px;" /><button>Go</button></p>
+	</div>
+
+	<div id="viewport" style="border: 2px solid magenta;">
+		<div id="wrapper">
+			<iframe style="width: 1200px;height: 10000px;border: none; padding: 0;margin: 0;display: block;overflow: hidden;" src="https://dict.cc"></iframe>
+		</div>
+	</div>
+
+	<div id="controls">
+		<table>
+			<tr>
+				<td>
+					<button id="zoom-minus">-Zoom</button>
+				</td>
+				<td>
+					<button id="up">Up</button>
+				</td>
+				<td>
+					<button id="zoom-plus">+Zoom</button>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<button id="left">Left</button>
+				</td>
+				<td>
+					<button id="zoom-reset">Reset Zoom</button>
+				</td>
+				<td>
+					<button id="right">Right</button>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<button id="lr-reset">Reset L/R</button>
+				</td>
+				<td>
+					<button id="down">Down</button>
+				</td>
+				<td>
+					<button id="ud-reset">Reset U/D</button>
+				</td>
+			</tr>
+		</table>
+
+		<h1>Show screenshot for:</h1>
+		<table>
+			<tr>
+				<td>
+					<button data-dur="300">5 min</button>
+				</td>
+				<td>
+					<button data-dur="600">10 min</button>
+				</td>
+				<td>
+					<button data-dur="1800">30 min</button>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<button data-dur="3600">1 hour</button>
+				</td>
+				<td>
+					<button data-dur="7200">2 hours</button>
+				</td>
+				<td>
+					<button data-dur="43200">12 hours</button>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+	<script type="text/javascript">
+		$(document).ready(async() => {
+			const timeout = ms => new Promise((resolve, reject) => {
+				setTimeout(resolve, ms)
+			});
+
+			await timeout(500);
+
+			const scrollbarWidth = (function getScrollbarWidth() {
+				// Creating invisible container
+				const outer = document.createElement('div');
+				outer.style.visibility = 'hidden';
+				outer.style.overflow = 'scroll'; // forcing scrollbar to appear
+				outer.style.msOverflowStyle = 'scrollbar'; // needed for WinJS apps
+				document.body.appendChild(outer);
+
+				// Creating inner element and placing it in the container
+				const inner = document.createElement('div');
+				outer.appendChild(inner);
+
+				// Calculating difference between container's full width and the child width
+				const scrollbarWidth = (outer.offsetWidth - inner.offsetWidth);
+
+				// Removing temporary elements from the DOM
+				outer.parentNode.removeChild(outer);
+
+				return scrollbarWidth;
+
+			})();
+
+			const waitForElemWidth = $e => new Promise(async resolve => {
+				while (true) {
+					if ($e.innerWidth() === 0) {
+						await timeout(20)
+					} else {
+						break
+					}
+				}
+				resolve()
+			});
+
+			const $viewport = $('div#viewport')
+			, $wrapper = $('div#wrapper')
+			, $iframe = $('iframe');
+
+			await waitForElemWidth($viewport);
+
+			// First, we should resize the viewport to include the scrollbars!
+			$viewport.add($wrapper).css({
+				width: $viewport.outerWidth(false) + scrollbarWidth + 'px',
+				height: $viewport.outerHeight(false) + scrollbarWidth + 'px'
+			});
+
+			let currentZoom = 1;
+			let transX = 0, transY = 0;
+
+			const adjustWrapper = () => {
+				$wrapper.css('transform', `scale(${currentZoom}) translateX(${transX}px) translateY(${transY}px)`);
+			};
+
+			const move = (dir, by = 20) => {
+				if (dir === 'left') {
+					transX -= by;
+				} else if (dir === 'right') {
+					transX += by;
+				} else if (dir === 'up') {
+					transY -= by;
+				} else if (dir === 'down') {
+					transY += by;
+				}
+
+				adjustWrapper();
+			};
+
+			$('#up').click(() => move('up'));
+			$('#down').click(() => move('down'));
+			$('#left').click(() => move('left'));
+			$('#right').click(() => move('right'));
+
+
+			const zoom = (plus, by = 0.05) => {
+				let val = currentZoom + (plus ? 1 : -1) * by;
+				if (val < 1) {
+					val = 1;
+				}
+				currentZoom = val;
+				adjustWrapper();
+			};
+
+			$('#zoom-minus').click(() => zoom(false));
+			$('#zoom-plus').click(() => zoom(true));
+			
+			$('#zoom-reset').click(() => zoom(false, 1e10));
+			$('#lr-reset').click(() => { transX = 0; adjustWrapper() });
+			$('#ud-reset').click(() => { transY = 0; adjustWrapper() });
+
+
+			$('button[data-dur]').click(e => {
+				console.log($(e.target).attr('data-dur'));
+				// Let's create a URL!
+				const url = `${location.protocol}//${location.host}/screens/screenshot?duration=${$(e.target).attr('data-dur')}&scroll_top=${$wrapper.scrollTop()}&scroll_left=${$wrapper.scrollLeft()}&trans_x=${transX}&trans_y=${transY}&zoom=${currentZoom}&url=${$iframe.attr('src')}`;
+
+
+				if (confirm(`Press OK if you want to proceed taking a screenshot of: ${url}`)) {
+					window.open(url, '_blank');
+				}
+			});
+		});
+	</script>
+</body>
