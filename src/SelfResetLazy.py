@@ -106,6 +106,8 @@ class AtomicResource(Generic[T]):
         self._queue = Queue(maxsize=1)
         if not item is None:
             self.recover(item)
+        
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
     @property
     def available(self):
@@ -117,10 +119,14 @@ class AtomicResource(Generic[T]):
 
     def obtain(self) -> T:
         # Block until available.
-        return self._queue.get(block=True, timeout=None)
+        self.logger.debug('Attempt to obtain item.')
+        item = self._queue.get(block=True, timeout=None)
+        self.logger.debug('Obtained item.')
+        return item
 
     def recover(self, item: T):
         # This'll throw if queue not empty.
         # Momentarily, we don't care if the recovered item is the same as was obtained.
         self._queue.put_nowait(item=item)
+        self.logger.debug('Recovered item.')
         return self
