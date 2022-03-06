@@ -2,6 +2,7 @@ from threading import Semaphore, Timer
 from typing import Callable, TypeVar, Generic, Any
 from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
+from queue import Queue
 
 
 T = TypeVar('T')
@@ -99,72 +100,27 @@ class SelfResetLazy(Generic[T]):
             self._semaphore.release()
 
 
-class LazyResource(SelfResetLazy):
-    def __init__(self, resource_name: str, fnCreateVal: Callable[[], T], fnDestroyVal: Callable[[T], Any] = None, resetAfter: float = None) -> None:
-        super().__init__(resource_name, fnCreateVal, fnDestroyVal, resetAfter)
-        self._semaphoreRes = Semaphore(value=0)
-        self._semaphoreSync = Semaphore(value=1)
-    
-    @property
-    def available(self) -> bool:
-        try:
-            self._semaphoreSync.acquire()
-            return self._semaphoreRes._value == 1
-        finally:
-            self._semaphoreSync.release()
-    
-    @property
-    def busy(self) -> bool:
-        try:
-            self._semaphoreSync.acquire()
-            return self._semaphoreRes._value == 0
-        finally:
-            self._semaphoreSync.release()
 
+class AtomicResource(Generic[T]):
+    def __init__(self, item: T=None) -> None:
+        self._queue = Queue(maxsize=1)
+        if not item is None:
+            self.recover(item)
+
+    @property
+    def available(self):
+        return self._queue.full()
+
+    @property
+    def busy(self):
+        return self._queue.empty()
 
     def obtain(self) -> T:
-        try:
-            self._semaphoreSync.acquire()
+        # Block until available.
+        return self._queue.get(block=True, timeout=None)
 
-            had_value = self._has_val
-
-            val = super().value
-            if had_value:
-                # If a new value was produced, keep semaphore at count=0.
-                # Otherwise, we should lock the resource
-                self._semaphoreRes.acquire()
-
-            self.logger.debug('Obtained value.')
-            return val
-        finally:
-            self._semaphoreSync.release()
-    
-    def recover(self, resource: T):
-        if self._semaphoreRes._value == 1:
-            raise Exception('The resource was not previously obtained, not sure what you are trying to return.')
-
-        if not self._has_val:
-            raise Exception('You cannot return a value that was not previously obtained.')
-
-        if not self._val is resource:
-            raise Exception('You must return the same value that was previously obtained.')
-
-        self.logger.debug('Recovered value.')
-        self._semaphoreRes.release()
+    def recover(self, item: T):
+        # This'll throw if queue not empty.
+        # Momentarily, we don't care if the recovered item is the same as was obtained.
+        self._queue.put_nowait(item=item)
         return self
-
-    def unsetValue(self, handle_ex: bool = True):
-        try:
-            self._semaphoreSync.acquire()
-
-            if self.hasValue:
-                # Reduce count in semaphore to 0:
-                self._semaphoreRes.acquire()
-            return super().unsetValue(handle_ex)
-        finally:
-            self._semaphoreSync.release()
-
-    @property
-    def value(self) -> T:
-        self.logger.warn(f'In {self.__class__.__name__} use obtain() and recover() to manage the resource. Forwarding this call now to obtain().')
-        return self.obtain()
