@@ -40,14 +40,14 @@ class StateManager(ABC, Events):
     
     def _initState(self, state_to: str, state_from: str=None, transition: str=None, **kwargs):
         self.logger.debug(f'Firing event: beforeInit, before initializing state "{state_to}".')
-        self._tpe.submit(lambda: self.beforeInit(sm=self, state_from=state_from, state_to=state_to, transition=transition, kwargs=kwargs))
+        self._tpe.submit(lambda: self.beforeInit(sm=self, state_from=state_from, state_to=state_to, transition=transition, **kwargs))
 
         self._unsetTimer()
 
         # Now wait for the user implementation (init logic of the transition-into state):
         self.logger.debug(f'Attempting finalization of state: "{state_to}".')
         try:
-            self._finalize(state_from=state_from, transition=transition, state_to=state_to, kwargs=kwargs)
+            self._finalize(state_from=state_from, transition=transition, state_to=state_to, **kwargs)
             # Now if this was successful, replace the current state:
             self._state = state_to
 
@@ -117,7 +117,7 @@ class StateManager(ABC, Events):
             # Merge with given args, which have precedence!
             args = args | trans_args
             return self._initState(
-                state_from=trans['from'], transition=trans['name'], state_to=trans['to'], kwargs=args)
+                state_from=trans['from'], transition=trans['name'], state_to=trans['to'], **args)
         finally:
             self._semaphore.release()
 
