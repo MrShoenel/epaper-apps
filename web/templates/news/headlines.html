@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>news: headlines</title>
+    <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="shortcut icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/default.less" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/headlines.less" />
+    <script type="text/javascript" src="/web/assets/less@4.js"></script>
+</head>
+<!--
+    This template shows the current headlines, as processed by the user's processor.
+		- It shows a multi-column layout, where the items flow.
+		- The number of items is configurable.
+-->
+<body>
+    <script type="text/javascript">
+				const news_items = {{ news_items|tojson|safe }};
+        const view_config = {{ view_config|tojson|safe }};
+    </script>
+    <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+
+    <div style="width: 800px; height: 480px; border: 0px solid #000;">
+				<ul id="news-list"></ul>
+    </div>
+    <script type="text/javascript">
+    $(document).ready(async() => {
+				const itemHeight = Math.floor(800 / view_config.items_per_column);
+
+        const timeout = ms => new Promise((resolve, reject) => {
+            setTimeout(resolve, ms)
+        });
+
+        const waitForFont = sel => new Promise(async resolve => {
+            while (true) {
+                let s = getComputedStyle(document.querySelector(sel))
+                if (s.fontFamily.toLowerCase().indexOf('wenquan') >= 0) {
+                    break
+                } else {
+                    await timeout(20)
+                }
+            }
+            await timeout(50) // A final timeout to wait for the font to propagate to all other elements.
+            resolve();
+        });
+				
+				const $ul = $('ul#news-list').css('column-count', view_config.num_columns);
+        await waitForFont('ul#news-list');
+
+				const $renderNewsItem = item => {
+					return $('<li/>').append(
+						$('<div/>').append(
+							$('<p/>').css('background-image', `url(${item.urlToImage})`)
+						).append(
+							$('<div/>').append(
+								$('<h1/>').text(item.title)
+							).append(
+								$('<p/>').text(item.description)
+							)
+						)
+					);
+				};
+
+				for (const item of news_items) {
+					$ul.append($renderNewsItem(item));
+				}
+    });
+    </script>
+</body>
+</html>
