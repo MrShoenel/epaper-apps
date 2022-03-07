@@ -1,0 +1,60 @@
+
+
+ul#news-list {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	height: inherit;
+	column-gap: 1ex;
+	page-break-inside: auto;
+	-webkit-column-break-inside: auto;
+
+	li {
+		break-inside: auto;
+		break-after: always;
+		break-before: always;
+
+		p.img {
+			height: 85px;
+			margin: 0;
+			overflow: hidden;
+
+			> span {
+				display: block;
+				height: inherit;
+				background-size: cover;
+				background-position: center;
+				transform: scale(1.2);
+			}
+		}
+
+		h1 {
+			margin: .1ex 0;
+			padding: 0;
+			font-size: 14px;
+			text-align: left;
+			line-height: 14px;
+			display: flex;
+			letter-spacing: -.1ex;
+		}
+		
+		p.desc {
+			text-align: justify;
+			font-size: 12px;
+			line-height: 10px;
+			margin: 0 0 1ex;
+			display: -webkit-box;
+			-webkit-line-clamp: 6;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+
+
+			& > span {
+				font-family: 'WenQuanYi Micro Hei Mono';
+				font-weight: 900;
+				margin-right: 1ex;
+				letter-spacing: -.25ex;
+			}
+		}
+	}
+}
