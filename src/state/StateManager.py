@@ -27,7 +27,7 @@ class StateManager(ABC, Events):
         return self._state
 
     def _unsetTimer(self):
-        if type(self._timer) is Timer:
+        if type(self._timer) is Timer and self._timer.is_alive():
             self._timer.cancel()
         return self
 
@@ -61,7 +61,12 @@ class StateManager(ABC, Events):
                 raise Exception('More than one timer-transition is defined for state "{state_to}".')
             if len(timer_trans) == 1:
                 tt = timer_trans[0]
-                self._setTimer(timeout=float(tt['args']['timeout']))
+                tt_timeout = float(tt['args']['timeout'])
+                if 'duration' in kwargs:
+                    # Allow override:
+                    tt_timeout = float(kwargs['duration'])
+                self.logger.debug(f'Setting timer for transition into state "{tt["to"]}" after {format(tt_timeout, ".2f")} seconds.')
+                self._setTimer(timeout=tt_timeout)
             
             self.logger.debug(f'Firing event: afterFinalize, after finalization of state "{state_to}".')
             self._tpe.submit(lambda: self.afterFinalize(sm=self, state_from=state_from, state_to=state_to, transition=transition))
