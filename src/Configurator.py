@@ -393,6 +393,7 @@ class Configurator:
 
             return render_template(
                 'news/headlines.html',
+                time_now=datetime.now().astimezone(),
                 news_items=user_impl.processItems(headlines.value),
                 view_config=self.config['views']['headlines'])
 

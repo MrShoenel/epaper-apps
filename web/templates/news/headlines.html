@@ -16,6 +16,7 @@
 -->
 <body>
     <script type="text/javascript">
+        const time_now = {{ time_now|tojson|safe }};
         const news_items = {{ news_items|tojson|safe }};
         const view_config = {{ view_config|tojson|safe }};
     </script>
@@ -83,6 +84,12 @@
 
             return $li;
         };
+
+        $ul.append($('<li/>').addClass('updated').append(
+            $('<span/>').text('Updated: ')
+        ).append(
+            $('<span/>').addClass('time').text(`${pad10(time_now.hour)}:${pad10(time_now.minute)}:${pad10(time_now.second)}`)
+        ));
 
         for (const item of news_items) {
             $ul.append($renderNewsItem(item));
