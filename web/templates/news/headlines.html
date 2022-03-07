@@ -16,18 +16,16 @@
 -->
 <body>
     <script type="text/javascript">
-				const news_items = {{ news_items|tojson|safe }};
+        const news_items = {{ news_items|tojson|safe }};
         const view_config = {{ view_config|tojson|safe }};
     </script>
     <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
 
-    <div style="width: 800px; height: 480px; border: 0px solid #000;">
-				<ul id="news-list"></ul>
+    <div style="width: 800px; height: 480px; border: 0px solid #000; border-width: 0 1px 1px 0; overflow: hidden;">
+        <ul id="news-list"></ul>
     </div>
     <script type="text/javascript">
     $(document).ready(async() => {
-				const itemHeight = Math.floor(800 / view_config.items_per_column);
-
         const timeout = ms => new Promise((resolve, reject) => {
             setTimeout(resolve, ms)
         });
@@ -45,26 +43,33 @@
             resolve();
         });
 				
-				const $ul = $('ul#news-list').css('column-count', view_config.num_columns);
+        const $ul = $('ul#news-list').css('column-count', view_config.num_columns);
         await waitForFont('ul#news-list');
 
-				const $renderNewsItem = item => {
-					return $('<li/>').append(
-						$('<div/>').append(
-							$('<p/>').css('background-image', `url(${item.urlToImage})`)
-						).append(
-							$('<div/>').append(
-								$('<h1/>').text(item.title)
-							).append(
-								$('<p/>').text(item.description)
-							)
-						)
-					);
-				};
+        const pad10 = s => {
+            s = `${s}`;
+            return s.length === 1 ? `0${s}` : s;
+        };
 
-				for (const item of news_items) {
-					$ul.append($renderNewsItem(item));
-				}
+        const $renderNewsItem = item => {
+            if (!item.urlToImage || !item.title || !item.description) {
+                return '';
+            }
+
+            return $('<li/>').append(
+                $('<p/>').addClass('img').append(
+                    $('<span/>').css('background-image', `url("${item.urlToImage}")`)
+                )
+            ).append(
+                $('<h1/>').text(item.title)
+            ).append(
+                $('<p/>').addClass('desc').text(item.description).prepend($('<span/>').text(`${pad10(item.publishedAt.hour)}:${pad10(item.publishedAt.minute)}`))
+            );
+        };
+
+        for (const item of news_items) {
+            $ul.append($renderNewsItem(item));
+        }
     });
     </script>
 </body>
