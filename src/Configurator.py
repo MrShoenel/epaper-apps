@@ -378,7 +378,11 @@ class Configurator:
 
         def getHeadlineItems():
             cv = self.config['views']['headlines']
-            return loads(requests.get(url=f'{cv["url"]}{c["api_key"]}').text)['articles']
+            raw = requests.get(url=f'{cv["url"]}{c["api_key"]}').text
+            data = loads(raw)['articles']
+            with open(file=abspath(join(self.data_folder, 'news.json')), mode='w', encoding='utf-8') as fp:
+                fp.write(raw)
+            return data
 
         headlines = SelfResetLazy(resource_name='headlines', fnCreateVal=getHeadlineItems, resetAfter=cv['interval'])
 
