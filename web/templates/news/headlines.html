@@ -63,7 +63,7 @@
             ).append(
                 $('<h1/>').text(item.title)
             ).append(
-                $('<p/>').addClass('desc').text(item.description).prepend($('<span/>').text(`${pad10(item.publishedAt.hour)}:${pad10(item.publishedAt.minute)}`))
+                $('<p/>').addClass('desc').attr('style', `-webkit-line-clamp: ${view_config.lines_desc} !important`).text(item.description).prepend($('<span/>').text(`${pad10(item.publishedAt.hour)}:${pad10(item.publishedAt.minute)}`))
             );
 
             const $dummy = $('<img/>');
