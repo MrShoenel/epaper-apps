@@ -13,6 +13,7 @@ from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from json import dumps, load
+from jsons import loads
 from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
@@ -23,6 +24,8 @@ from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
 from src.ScreenshotMaker import ScreenshotMaker
 from src.SelfResetLazy import SelfResetLazy, AtomicResource
+from src.NewsImpl import NewsImpl
+from importlib import import_module
 from os.path import join, abspath
 from threading import Timer
 from flask import render_template
@@ -358,6 +361,32 @@ class Configurator:
 
         return self
     
+    def setupNews(self):
+        c = self.config['news']
+        cv = self.config['views']['headlines']
+
+        def getHeadlineItems():
+            cv = self.config['views']['headlines']
+            return loads(requests.get(url=f'{cv["url"]}{c["api_key"]}').text)['articles']
+
+        headlines = SelfResetLazy(resource_name='headlines', fnCreateVal=getHeadlineItems, resetAfter=cv['interval'])
+
+        def renderHeadlines():
+            mod = import_module(f'src.news.{c["user_impl"]}')
+            klass = getattr(mod, c['user_impl'])
+            user_impl: NewsImpl = klass()
+
+            return render_template(
+                'news/headlines.html',
+                news_items=user_impl.processItems(headlines.value),
+                view_config=self.config['views']['headlines'])
+
+        self.api.addRoute(route='/news/headlines', fn=renderHeadlines)
+
+        self.logger.debug('Added news-related routes.')
+
+        return self
+
     @property
     def calibrateEpaperOnStart(self) -> bool:
         return self.config['general']['calibrate_epaper_on_start']
