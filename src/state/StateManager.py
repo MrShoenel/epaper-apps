@@ -87,7 +87,15 @@ class StateManager(ABC, Events):
         return self.activate(transition=None)
     
     def availableTransitions(self):
-        return list(filter(lambda t: t['from']==self.state or t['from']=='*', self._stateConfig['transitions']))
+        def atFilter(t: dict):
+            if t['from'] == self.state or t['from'] == '*':
+                if self.state == t['to'] and 'allow-reentry' in t.keys() and not t['allow-reentry']:
+                    # Wants to go from A -> A, which is allowed by default, but NOT here:
+                    return False
+                return True
+            return False
+        
+        return list(filter(atFilter, self._stateConfig['transitions']))
     
     def activate(self, transition: str=None, **trans_args):
         """
