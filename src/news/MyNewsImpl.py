@@ -1,5 +1,6 @@
 from src.NewsImpl import NewsImpl
 from typing import Any
+from functools import cmp_to_key
 
 
 class MyNewsImpl(NewsImpl):
@@ -19,5 +20,10 @@ class MyNewsImpl(NewsImpl):
                 items_ntv.append(item)
             else:
                 items_others.append(item)
-        
+
+        items_ntv.sort(
+            reverse=True, key=cmp_to_key(lambda a, b: -1 if a['publishedAt'] < b['publishedAt'] else 1))
+        items_others.sort(
+            reverse=True, key=cmp_to_key(lambda a, b: -1 if a['publishedAt'] < b['publishedAt'] else 1))
+
         return items_ntv + items_others
