@@ -389,7 +389,7 @@ class Configurator:
         def renderHeadlines():
             mod = import_module(f'src.news.{c["user_impl"]}')
             klass = getattr(mod, c['user_impl'])
-            user_impl: NewsImpl = klass()
+            user_impl: NewsImpl = klass(c)
 
             return render_template(
                 'news/headlines.html',
