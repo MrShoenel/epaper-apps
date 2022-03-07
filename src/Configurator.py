@@ -189,30 +189,41 @@ class Configurator:
             self.logger.info('Setting up all output controls.')
             for c in self.config['outputs']:
                 leds[c['name']] = self.ctrl.addLed(pin=c['pin'], name=c['name'], burn_for=2)
+
+        def show_error(duration: float=2.5):
+            if 'led-red' in leds.keys():
+                # Flash the red LED for some time
+                return self.ctrl.blinkLed(led=leds['led-red'], freq=10, duration=duration)
+            return None
         
         def button_callback(btn: Button):
             if self.epaperStateMachine.busy:
                 self.logger.debug('The ePaperStateMachine is currently busy. Ignoring button press.')
-                if 'led-red' in leds.keys():
-                    # Flash the red LED for some time
-                    self.ctrl.blinkLed(led=leds['led-red'], freq=10, duration=3)
-                return self
+                show_error()
+                return
 
             # find associated config:
             c = list(filter(lambda conf: btn.name==conf['name'], self.config['inputs']))[0]
             # Check if this button triggers one of the available transitions:
             at = set(map(lambda trans: trans['name'], self.epaperStateMachine.availableTransitions()))
             common = at.intersection(set(c['transitions']))
-            if len(common) == 1:
+            if len(common) == 0:
+                # Error, no intersection!
+                self.logger.warn(f'The button "{btn.name}"@{btn.pin} has no currently valid transition associated.')
+                show_error()
+                return
+            elif len(common) == 1:
                 # We will not wait for it, nor are we interested in the result.
                 # Activating an e-paper state takes a long time and is a synchronized method.
-                self._tpe.submit(lambda: self.epaperStateMachine.activate(transition=list(at)[0]))
+                self._tpe.submit(lambda: self.epaperStateMachine.activate(transition=list(common)[0]))
             
-            # let's also check if this button press has an output action:
-            if 'output' in c and c['output']['name'] in leds.keys():
-                led = leds[c['output']['name']]
-                # We will not wait for this to be finished, either
-                self.ctrl.burnLed(led=led, burn_for=c['output']['duration'])
+                # let's also check if this button press has an output action:
+                if 'output' in c and c['output']['name'] in leds.keys():
+                    led = leds[c['output']['name']]
+                    # We will not wait for this to be finished, either
+                    self.ctrl.burnLed(led=led, burn_for=c['output']['duration'])
+            else:
+                self.logger.error(f'More than one transition is defined for this button: {list(common)}')
 
         # Note that these callbacks are fired in an extra thread already
         # by the ButtonAndLeds instance.
