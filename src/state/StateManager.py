@@ -64,6 +64,7 @@ class StateManager(ABC, Events):
                 tt_timeout = float(tt['args']['timeout'])
                 if 'duration' in kwargs:
                     # Allow override:
+                    self.logger.debug(f'Overriding timeout from {format(tt_timeout, ".2f")} seconds to {format(kwargs["duration"], ".2f")} seconds.')
                     tt_timeout = float(kwargs['duration'])
                 self.logger.debug(f'Setting timer for transition into state "{tt["to"]}" after {format(tt_timeout, ".2f")} seconds.')
                 self._setTimer(timeout=tt_timeout)

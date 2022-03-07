@@ -6,6 +6,9 @@ import pathlib
 import atexit
 import locale
 import requests
+from base64 import b64decode
+from PIL import Image
+from io import BytesIO
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -304,9 +307,6 @@ class Configurator:
             text = re.sub(pattern=r'srcset="(?!(((http)|(//))))', repl=f'srcset="{base}/', string=text)
             text = re.sub(pattern=r'href="(?!(((http)|(//))))', repl=f'href="{base}/', string=text)
 
-            with open('C:\\temp\\bla.html', 'w', encoding='utf-8') as fp:
-                print(text, file=fp)
-
             return text
         
         self.api.addRoute(route='/userscreen/iframe', fn=renderIframe)
@@ -317,13 +317,44 @@ class Configurator:
 
         self.api.addRoute(route='/userscreen/create', fn=renderCreate)
 
-        def renderScreenshot(url, scroll_top, scroll_left, trans_x, trans_y, zoom, direct, duration):
+        def renderScreenshot(url, scroll_top, scroll_left, trans_x, trans_y, zoom, direct, **kwargs):
             return render_template(
                 'userscreen/prepare.html',
                 url=url, scroll_top=scroll_top, scroll_left=scroll_left,
                 trans_x=trans_x, trans_y=trans_y, direct=direct, zoom=zoom)
         
         self.api.addRoute(route='/user/screenshot', fn=renderScreenshot)
+
+        self.api.addRoute(route='/userscreen/img-upload', fn=lambda: render_template('userscreen/img-upload.html'))
+
+        def processCroppedImg(png: str, **kwargs):
+            self.logger.debug('Processing user-cropped image.')
+            # png is "data:image/png;base64,<the base64-encoded image>"
+            img = Image.open(BytesIO(b64decode(s=png.split(',')[1]))).resize(size=(800, 480), resample=Image.LANCZOS)
+            redimg = img.copy()
+            rpixels = redimg.load()
+            blackimg = img
+            bpixels = blackimg.load()
+
+            for i in range(redimg.size[0]):
+                for j in range(redimg.size[1]):
+                    if rpixels[i, j][0] <= rpixels[i, j][1] and rpixels[i, j][0] <= rpixels[i, j][2]:
+                        rpixels[i, j] = (255, 255, 255)
+                    elif bpixels[i, j][0] > bpixels[i, j][1] and bpixels[i, j][0] > bpixels[i, j][2]:
+                        bpixels[i, j] = (255, 255, 255)
+            
+            with open(file=abspath(join(self.data_folder, f'screenshot_b.png')), mode='wb') as fp:
+                blackimg.save(fp)
+            with open(file=abspath(join(self.data_folder, f'screenshot_r.png')), mode='wb') as fp:
+                redimg.save(fp)
+            
+            self._tpe.submit(lambda: self.epaperStateMachine.activate(transition='show-userscreen', duration=3600))
+
+            return 'OK', 200
+        
+        self.api.addRoute(route='/userscreen/img-process', fn=processCroppedImg, methods=['POST'])
+
+        self.logger.debug('Added routes for user-screens.')
 
         return self
     
