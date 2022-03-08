@@ -3,6 +3,8 @@ import os
 from time import sleep
 from PIL import Image #, ImageOps, ImageEnhance
 from selenium import webdriver
+from concurrent.futures import Future
+from threading import Thread
 
 
 class ScreenshotMaker:
@@ -49,10 +51,29 @@ class ScreenshotMaker:
 
         return self
     
+    def waitForElement(self, id: str, max_wait: float=30.0) -> Future[bool]:
+        f = Future()
+
+        def sel(max_wait: float) -> bool:
+            while max_wait > 0:
+                try:
+                    self.driver.find_element_by_id(id)
+                    f.set_result(True)
+                    return True
+                except:
+                    sleep(0.25)
+                finally:
+                    max_wait -= 0.25
+            f.set_result(False)
+
+        Thread(target=sel, args=(max_wait,)).start()
+        return f
+    
     def screenshot(self, width: int, height: int, url: str, **kwargs) -> list[Image.Image, Image.Image]:
         self.setViewportSize(width=width, height=height)
         self.driver.get(url=url)
-        sleep(7.5)
+        if not self.waitForElement(id='ready').result():
+            raise Exception('Waiting for page to load timed out.')
         
         img_bytes = self.driver.get_screenshot_as_png()
         img = Image.open(io.BytesIO(initial_bytes=img_bytes))
