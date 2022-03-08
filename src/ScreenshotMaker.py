@@ -51,7 +51,7 @@ class ScreenshotMaker:
 
         return self
     
-    def waitForElement(self, id: str, max_wait: float=30.0) -> Future[bool]:
+    def waitForElement(self, id: str, max_wait: float=60.0) -> Future[bool]:
         f = Future()
 
         def sel(max_wait: float) -> bool:
