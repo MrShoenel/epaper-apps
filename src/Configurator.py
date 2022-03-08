@@ -384,7 +384,7 @@ class Configurator:
                 fp.write(raw)
             return data
 
-        headlines = SelfResetLazy(resource_name='headlines', fnCreateVal=getHeadlineItems, resetAfter=cv['interval'])
+        headlines = SelfResetLazy(resource_name='headlines', fnCreateVal=getHeadlineItems, resetAfter=float(cv['interval']))
 
         def renderHeadlines():
             mod = import_module(f'src.news.{c["user_impl"]}')
