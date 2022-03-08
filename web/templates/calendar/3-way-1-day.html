@@ -400,6 +400,9 @@
         }
 
         renderLastUpdated();
+
+        await timeout(100);
+        $('body').append($('<p/>').attr('id', 'ready'));
     });
     </script>
 </body>

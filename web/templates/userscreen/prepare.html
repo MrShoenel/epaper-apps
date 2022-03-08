@@ -95,6 +95,9 @@
 			});
 
 			$i.attr('src', _direct ? _url : `${location.protocol}//${location.host}/userscreen/iframe?url=${_url}`);
+
+			await timeout(100);
+			$('body').append($('<p/>').attr('id', 'ready'));
 		});
 	</script>
 </body>

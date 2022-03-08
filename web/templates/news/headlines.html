@@ -52,7 +52,7 @@
             return s.length === 1 ? `0${s}` : s;
         };
 
-        const $renderNewsItem = item => {
+        const $renderNewsItem = item => new Promise((resolve, reject) => {
             if (!item.urlToImage || !item.title || !item.description) {
                 return '';
             }
@@ -70,20 +70,13 @@
             let worked = false;
             const $dummy = $('<img/>');
             $dummy[0].onload = e => {
-                worked = true;
+                resolve($li); // This item is good to go!
             };
             $dummy[0].onerror = e => {
-                $li.remove(); // Remove news items without image!
+                resolve(null); // Promise.all() requires all to resolve!
             };
-            setTimeout(() => {
-                if (!worked) {
-                    $li.remove();
-                }
-            }, 2000);
             $dummy.attr('src', item.urlToImage);
-
-            return $li;
-        };
+        });
 
         $ul.append($('<li/>').addClass('updated').append(
             $('<span/>').text('Updated: ')
@@ -91,9 +84,16 @@
             $('<span/>').addClass('time').text(`${pad10(time_now.hour)}:${pad10(time_now.minute)}:${pad10(time_now.second)}`)
         ));
 
-        for (const item of news_items) {
-            $ul.append($renderNewsItem(item));
+        for (const $item of news_items.map($renderNewsItem)) {
+            const $liOrNull = await $item;
+            if ($liOrNull === null) {
+                continue
+            }
+            $ul.append($liOrNull);
         }
+
+        await timeout(100);
+        $('body').append($('<p/>').attr('id', 'ready'));
     });
     </script>
 </body>

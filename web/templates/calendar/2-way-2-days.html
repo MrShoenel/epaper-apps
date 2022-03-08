@@ -272,6 +272,9 @@
 
         renderHeader($('div#header-tomorrow'), time_tomorrow);
         renderHeader($('div#header-overmorrow'), time_overmorrow);
+
+        await timeout(100);
+        $('body').append($('<p/>').attr('id', 'ready'));
     });
     </script>
 </body>
