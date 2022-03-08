@@ -54,7 +54,8 @@
 
         const $renderNewsItem = item => new Promise((resolve, reject) => {
             if (!item.urlToImage || !item.title || !item.description) {
-                return '';
+                resolve(null);
+                return;
             }
 
             const $li = $('<li/>').append(
@@ -67,14 +68,27 @@
                 $('<p/>').addClass('desc').attr('style', `-webkit-line-clamp: ${view_config.lines_desc} !important`).text(item.description).prepend($('<span/>').text(`${pad10(item.publishedAt.hour)}:${pad10(item.publishedAt.minute)}`))
             );
 
-            let worked = false;
+            let resolved = false;
             const $dummy = $('<img/>');
             $dummy[0].onload = e => {
-                resolve($li); // This item is good to go!
+                if (resolved === false) {
+                    resolved = true;
+                    resolve($li); // This item is good to go!
+                }
             };
             $dummy[0].onerror = e => {
-                resolve(null); // Promise.all() requires all to resolve!
+                if (resolved === false) {
+                    resolved = true;
+                    resolve(null); // Promise.all() requires all to resolve!
+                }
             };
+            // Set a back-up timeout:
+            setTimeout(() => {
+                if (resolved === false) {
+                    resolved = true;
+                    resolve(null);
+                }
+            }, 3500);
             $dummy.attr('src', item.urlToImage);
         });
 
@@ -92,7 +106,7 @@
             $ul.append($liOrNull);
         }
 
-        await timeout(100);
+        await timeout(1000);
         $('body').append($('<p/>').attr('id', 'ready'));
     });
     </script>
