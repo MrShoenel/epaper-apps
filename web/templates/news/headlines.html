@@ -71,12 +71,14 @@
             let resolved = false;
             const $dummy = $('<img/>');
             $dummy[0].onload = e => {
+                $dummy.remove();
                 if (resolved === false) {
                     resolved = true;
                     resolve($li); // This item is good to go!
                 }
             };
             $dummy[0].onerror = e => {
+                $dummy.remove();
                 if (resolved === false) {
                     resolved = true;
                     resolve(null); // Promise.all() requires all to resolve!
@@ -84,12 +86,13 @@
             };
             // Set a back-up timeout:
             setTimeout(() => {
+                $dummy.remove();
                 if (resolved === false) {
                     resolved = true;
                     resolve(null);
                 }
-            }, 3500);
-            $dummy.attr('src', item.urlToImage);
+            }, 5000);
+            $dummy.css('opacity', 0).attr('src', item.urlToImage).appendTo($('body'));
         });
 
         $ul.append($('<li/>').addClass('updated').append(
@@ -106,7 +109,7 @@
             $ul.append($liOrNull);
         }
 
-        await timeout(1000);
+        await timeout(3000);
         $('body').append($('<p/>').attr('id', 'ready'));
     });
     </script>
