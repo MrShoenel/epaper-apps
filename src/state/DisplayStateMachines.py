@@ -3,6 +3,7 @@ from src.ePaper import ePaper
 from src.lcd.TextLCD import TextLCD
 from PIL import Image
 import os
+from os.path import exists
 from os.path import abspath, join
 from typing import Dict
 from src.lcd.apps.LcdApp import LcdApp
@@ -60,8 +61,15 @@ class ePaperStateMachine(StateManager):
             lock = InterProcessLock(path=abspath(join(data_folder, 'write.lock')))
             lock.acquire()
 
-            fp_black = open(file=abspath(join(data_folder, f'{state_to}_b.png')), mode='rb')
-            fp_red = open(file=abspath(join(data_folder, f'{state_to}_r.png')), mode='rb')
+            file_black = abspath(join(data_folder, f'{state_to}_b.png'))
+            file_red = abspath(join(data_folder, f'{state_to}_r.png'))
+
+            if not exists(file_black) or not exists(file_red):
+                self.logger.error('The images for writing to the display do not exist!')
+                return self
+
+            fp_black = open(file=file_black, mode='rb')
+            fp_red = open(file=file_red, mode='rb')
             
             blackimg = Image.open(fp=fp_black)
             redimg = Image.open(fp=fp_red)
