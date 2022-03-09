@@ -3,11 +3,11 @@ from typing import Any
 
 class NewsImpl(ABC):
 
+    @property
     @abstractmethod
-    def processItems(self, items: list[dict[str, Any]]):
+    def items(self):
         """
-        This method is given the news items of newsapi.org and is supposed
-        to return a processed list of items to be used in the template.
+        Abstract method that shall return a list of news items, with all
+        properties as required by the template, and in the desired order.
         """
         pass
-
