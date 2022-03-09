@@ -91,7 +91,7 @@
                     resolved = true;
                     resolve(null);
                 }
-            }, 5000);
+            }, 6000);
             $dummy.css('opacity', 0).attr('src', item.urlToImage).appendTo($('body'));
         });
 
@@ -109,7 +109,7 @@
             $ul.append($liOrNull);
         }
 
-        await timeout(3000);
+        await timeout(5000);
         $('body').append($('<p/>').attr('id', 'ready'));
     });
     </script>
