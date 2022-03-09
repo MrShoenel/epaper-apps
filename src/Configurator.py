@@ -374,27 +374,15 @@ class Configurator:
     
     def setupNews(self):
         c = self.config['news']
-        cv = self.config['views']['headlines']
-
-        def getHeadlineItems():
-            cv = self.config['views']['headlines']
-            raw = requests.get(url=f'{cv["url"]}{c["api_key"]}').text
-            data = loads(raw)['articles']
-            with open(file=abspath(join(self.data_folder, 'news.json')), mode='w', encoding='utf-8') as fp:
-                fp.write(raw)
-            return data
-
-        headlines = SelfResetLazy(resource_name='headlines', fnCreateVal=getHeadlineItems, resetAfter=float(cv['interval']))
+        mod = import_module(f'src.news.{c["user_impl"]}')
+        klass = getattr(mod, c['user_impl'])
+        user_impl: NewsImpl = klass(c, self.data_folder)
 
         def renderHeadlines():
-            mod = import_module(f'src.news.{c["user_impl"]}')
-            klass = getattr(mod, c['user_impl'])
-            user_impl: NewsImpl = klass(c)
-
             return render_template(
                 'news/headlines.html',
                 time_now=datetime.now().astimezone(),
-                news_items=user_impl.processItems(headlines.value),
+                news_items=user_impl.items,
                 view_config=self.config['views']['headlines'])
 
         self.api.addRoute(route='/news/headlines', fn=renderHeadlines)
