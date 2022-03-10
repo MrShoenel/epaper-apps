@@ -6,6 +6,7 @@ from jsons import loads
 from os.path import abspath, join, exists
 from src.CustomFormatter import CustomFormatter
 import requests
+from html import unescape
 
 
 class MyNewsImpl(NewsImpl):
@@ -56,6 +57,9 @@ class MyNewsImpl(NewsImpl):
             conf = self.conf['urls'][key]
 
             for item in lazy.value:
+                if item['title'] is None or item['description'] is None:
+                    continue
+
                 cont = False
                 for term in map(lambda s: s.lower(), conf['filter']):
                     if term in s(item['title']) or term in s(item['description']) or term in s(item['author']) or term in s(item['source']['name']):
@@ -65,8 +69,12 @@ class MyNewsImpl(NewsImpl):
                 if cont:
                     continue
 
+                item = item.copy() # Do not modify the original!
                 if ' - ' in item['title']:
                     item['title'] = item['title'][0:item['title'].rindex(' - ')]
+                
+                item['title'] = unescape(item['title'])
+                item['description'] = unescape(item['description'])
 
                 items_filtered.append(item)
 
