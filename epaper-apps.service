@@ -1,0 +1,16 @@
+[Unit]
+Description=ePaper Apps
+After=network.target
+
+[Service]
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/epaper-apps
+ExecStart=/home/pi/epaper-apps/venv/bin/python main.py
+RestartSec=30
+Restart=always
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target
