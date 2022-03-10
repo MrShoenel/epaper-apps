@@ -81,7 +81,7 @@
                 $dummy.remove();
                 if (resolved === false) {
                     resolved = true;
-                    resolve(null); // Promise.all() requires all to resolve!
+                    resolve(null);
                 }
             };
             // Set a back-up timeout:
@@ -91,7 +91,7 @@
                     resolved = true;
                     resolve(null);
                 }
-            }, 6000);
+            }, 15000);
             $dummy.css('opacity', 0).attr('src', item.urlToImage).appendTo($('body'));
         });
 
@@ -101,16 +101,27 @@
             $('<span/>').addClass('time').text(`${pad10(time_now.hour)}:${pad10(time_now.minute)}:${pad10(time_now.second)}`)
         ));
 
-        for (const $item of news_items.map($renderNewsItem)) {
-            const $liOrNull = await $item;
+        const start = +new Date;
+
+        while (news_items.length > 0) {
+            const $liOrNull = await $renderNewsItem(news_items.shift())
             if ($liOrNull === null) {
                 continue
             }
             $ul.append($liOrNull);
+
+            // Let's check if we're appending beyond visible. In that
+            // case, stop appending, break the loop.
+            if ($liOrNull.offset().left > 800) {
+                $liOrNull.remove();
+                break;
+            }
         }
+        console.log(`Skipped rendering of ${news_items.length} more items (no visual space). Rendering took ${(+new Date) - start} ms. Waiting for a final timeout.`);
 
         await timeout(5000);
         $('body').append($('<p/>').attr('id', 'ready'));
+        console.log('Ready!');
     });
     </script>
 </body>
