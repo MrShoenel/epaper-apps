@@ -32,11 +32,11 @@ class MyNewsImpl(NewsImpl):
         if data['status'] != 'ok':
             # Most likely rate-limited, but doesn't matter.
             if exists(file):
-                self.logger.warn(f'Got error: "{data["status"]["code"]}", "{data["status"]["message"]}", returning potentially old news for "{urlKey}".')
+                self.logger.warn(f'Cannot load news, got error: "{str(data)}", returning potentially old news for "{urlKey}".')
                 with open(file=file, mode='r', encoding='utf-8') as fp:
-                    return loads(fp.read())
+                    return loads(fp.read())['articles']
             else:
-                self.logger.error(f'Cannot load news and no previous items exist. Error was: "{data["status"]["code"]}", "{data["status"]["message"]}".')
+                self.logger.error(f'Cannot load news and no previous items exist. Error was: "{str(data)}".')
                 return []
 
         with open(file=file, mode='w', encoding='utf-8') as fp:
