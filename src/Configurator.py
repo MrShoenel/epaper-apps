@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import re
 import logging
@@ -9,7 +10,7 @@ import requests
 from base64 import b64decode
 from PIL import Image
 from io import BytesIO
-from typing import Dict
+from typing import Dict, Type, TypeVar, ClassVar
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from json import dumps, load
@@ -32,6 +33,8 @@ from flask import render_template
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from urllib.parse import urlencode, urlparse
+
+T = TypeVar('T')
 
 if os.name == 'posix':
     import RPi.GPIO as GPIO
@@ -59,6 +62,8 @@ class Configurator:
     """
 
     GPIO_SET_UP = False
+
+    _instance = None
 
     def __init__(self, config):
         self.config = config
@@ -89,11 +94,28 @@ class Configurator:
         self.textLcdStateMachine: TextLcdStateMachine = None
         self.ctrl: ButtonsAndLeds = None
         self.res_ssm: SelfResetLazy[AtomicResource[ScreenshotMaker]] = None
-    
 
-    def fromJson(path: str='config.json'):
+        self._svc_container: Dict[Type, T] = {}
+    
+    def getService(self, klass: Type[T]) -> T:
+        if klass in self._svc_container.keys():
+            return self._svc_container[klass]
+        raise Exception(f'No service previously registered for type "{klass.__name__}".')
+
+
+    @staticmethod
+    def instance() -> Configurator:
+        if Configurator._instance is None:
+            raise Exception('No instance was set yet.')
+        return Configurator._instance
+    
+    @staticmethod
+    def fromJson(path: str='config.json') -> Configurator:
+        if Configurator._instance is not None:
+            raise Exception('Instance already configured.')
         with open(file=path, mode='r', encoding='utf-8') as fp:
-            return Configurator(config=load(fp=fp))
+            Configurator._instance = Configurator(config=load(fp=fp))
+            return Configurator.instance()
     
     def startApi(self, blocking: bool=False) -> Api:
         c = self.config['api']
