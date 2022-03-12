@@ -34,7 +34,14 @@ class Datetime(LcdApp):
         self._l2every = l2every
         self._showTemp = showTemp
         self._semaphore = Semaphore(1)
-        
+
+        def getWeatherService() -> WeatherImpl:
+            # We have to use this hack to avoid circular imports.
+            from src.Configurator import Configurator
+            return Configurator.instance().getService(WeatherImpl)
+
+        self.lazy_weather: SelfResetLazy[WeatherImpl] = SelfResetLazy(resource_name='weather', fnCreateVal=getWeatherService)
+
         self.scroll = mode == 'bounce'
 
         def timeFn():
@@ -59,13 +66,6 @@ class Datetime(LcdApp):
         self._t2: Thread = None
 
         self._activate = False
-
-        def getWeatherService() -> WeatherImpl:
-            # We have to use this hack to avoid circular imports.
-            from src.Configurator import Configurator
-            return Configurator.instance().getService(WeatherImpl)
-        
-        self.lazy_weather: SelfResetLazy[WeatherImpl] = SelfResetLazy(resource_name='weather', fnCreateVal=getWeatherService)
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
