@@ -20,6 +20,7 @@ from src.CustomFormatter import CustomFormatter
 from src.CalendarMerger import CalendarMerger
 from src.ButtonsAndLeds import ButtonsAndLeds, Button, Led
 from src.Api import Api
+from src.WeatherImpl import WeatherImpl
 from src.ePaper import ePaper
 from src.state.StateManager import StateManager
 from src.state.DisplayStateMachines import ePaperStateMachine, TextLcdStateMachine
@@ -393,6 +394,20 @@ class Configurator:
         self.logger.debug('Added routes for user-screens.')
 
         return self
+    
+    def setupWeather(self):
+        c = self.config['weather']
+        mod = import_module(f'src.weather.{c["user_impl"]}')
+        klass = getattr(mod, c['user_impl'])
+        user_impl: WeatherImpl = klass(c, self.data_folder)
+
+        self.logger.debug(f'Registering service for news: "{user_impl.__class__.__name__}"')
+        self._svc_container[WeatherImpl] = user_impl
+
+        # TODO: Later, when we require routes, add them here.
+
+        return self
+
     
     def setupNews(self):
         c = self.config['news']
