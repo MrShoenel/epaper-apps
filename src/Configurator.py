@@ -400,6 +400,9 @@ class Configurator:
         klass = getattr(mod, c['user_impl'])
         user_impl: NewsImpl = klass(c, self.data_folder)
 
+        self.logger.debug(f'Registering service for news: "{user_impl.__class__.__name__}"')
+        self._svc_container[NewsImpl] = user_impl
+
         def renderHeadlines():
             return render_template(
                 'news/headlines.html',
