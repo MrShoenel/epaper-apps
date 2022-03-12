@@ -6,6 +6,8 @@ from src.lcd.apps.LcdApp import LcdApp
 from src.lcd.ScrollString import BounceString, ScrollString
 from threading import Thread, Semaphore
 from src.CustomFormatter import CustomFormatter
+from src.SelfResetLazy import SelfResetLazy
+from src.WeatherImpl import WeatherImpl
 from typing import Callable
 
 
@@ -24,12 +26,13 @@ def sleep_partitioned(fn_do_sleep: Callable[[], bool], secs, by=1.0):
 
 
 class Datetime(LcdApp):
-    def __init__(self, lcd: TextLCD, mode: str='bounce', l1interval: float=0.999, l2interval: float=4.75, l1every: int=2, l2every: int=1):
+    def __init__(self, lcd: TextLCD, mode: str='bounce', l1interval: float=0.999, l2interval: float=4.75, l1every: int=2, l2every: int=1, showTemp: bool=True):
         self._lcd = lcd
         self._l1interval = l1interval
         self._l2interval = l2interval
         self._l1every = l1every
         self._l2every = l2every
+        self._showTemp = showTemp
         self._semaphore = Semaphore(1)
         
         self.scroll = mode == 'bounce'
@@ -37,6 +40,10 @@ class Datetime(LcdApp):
         def timeFn():
             dt = datetime.now()
             line = f'{pad(dt.hour)}:{pad(dt.minute)}:{pad(dt.second)}'
+
+            if showTemp:
+                temp = self.lazy_weather.value.currentTemp
+                line += f' {format(round(temp, 1), ".1f")}°C'
             return line
         
         def dateFn():
@@ -52,6 +59,13 @@ class Datetime(LcdApp):
         self._t2: Thread = None
 
         self._activate = False
+
+        def getWeatherService() -> WeatherImpl:
+            # We have to use this hack to avoid circular imports.
+            from src.Configurator import Configurator
+            return Configurator.instance().getService(WeatherImpl)
+        
+        self.lazy_weather: SelfResetLazy[WeatherImpl] = SelfResetLazy(resource_name='weather', fnCreateVal=getWeatherService)
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
     
