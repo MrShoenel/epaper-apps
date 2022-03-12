@@ -50,7 +50,7 @@ class Datetime(LcdApp):
 
             if self._showTemp:
                 temp = self.lazy_weather.value.currentTemp
-                line += f' {format(round(temp, 1), ".1f")}\xB0C'
+                line += f' {format(round(temp, 1), ".1f")}{chr(176)}C'
             return line
         
         def dateFn():
