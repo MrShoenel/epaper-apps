@@ -19,20 +19,20 @@ class MyNewsImpl(NewsImpl):
 
         self._lazies: dict[str, SelfResetLazy[list[Any]]] = {}
 
-        for key in self.conf['urls'].keys():
-            self._lazies[key] = SelfResetLazy(resource_name=f'headlines({key})', fnCreateVal=lambda key=key: self.getHeadlineItems(key), resetAfter=float(self.conf['urls'][key]['interval']))
+        for key in self.conf['sources'].keys():
+            self._lazies[key] = SelfResetLazy(resource_name=f'headlines({key})', fnCreateVal=lambda key=key: self.getHeadlineItems(key), resetAfter=float(self.conf['sources'][key]['interval']))
     
-    def getHeadlineItems(self, urlKey: str):
-        url: str = self.conf['urls'][urlKey]['url']
+    def getHeadlineItems(self, key: str):
+        url: str = self.conf['sources'][key]['url']
         url = url.replace('__APIKEY__', self.conf['api_key'])
         raw = requests.get(url=url).text
         data = loads(raw)
-        file = abspath(join(self.data_folder, f'news_{urlKey}.json'))
+        file = abspath(join(self.data_folder, f'news_{key}.json'))
 
         if data['status'] != 'ok':
             # Most likely rate-limited, but doesn't matter.
             if exists(file):
-                self.logger.warn(f'Cannot load news, got error: "{str(data)}", returning potentially old news for "{urlKey}".')
+                self.logger.warn(f'Cannot load news, got error: "{str(data)}", returning potentially old news for "{key}".')
                 with open(file=file, mode='r', encoding='utf-8') as fp:
                     return loads(fp.read())['articles']
             else:
@@ -45,7 +45,7 @@ class MyNewsImpl(NewsImpl):
         return data['articles']
     
     @property
-    def items(self):
+    def items(self) -> list:
         def s(n: str=None):
             if n is None:
                 n = ''
@@ -55,7 +55,7 @@ class MyNewsImpl(NewsImpl):
         filter_general = list(map(lambda s: s.lower(), self.conf['filter']))
 
         for key, lazy in self._lazies.items():
-            conf = self.conf['urls'][key]
+            conf = self.conf['sources'][key]
             filter_all = filter_general + list(map(lambda s: s.lower(), conf['filter']))
 
             for item in lazy.value:
