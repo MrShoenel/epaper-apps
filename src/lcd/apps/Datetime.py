@@ -48,7 +48,7 @@ class Datetime(LcdApp):
             dt = datetime.now()
             line = f'{pad(dt.hour)}:{pad(dt.minute)}:{pad(dt.second)}'
 
-            if self.showTemp:
+            if self._showTemp:
                 temp = self.lazy_weather.value.currentTemp
                 line += f' {format(round(temp, 1), ".1f")}\xB0C'
             return line
