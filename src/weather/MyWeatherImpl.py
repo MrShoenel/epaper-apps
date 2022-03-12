@@ -5,6 +5,7 @@ from os.path import abspath, join, exists
 from typing import Any
 from jsons import loads
 import requests
+import logging
 
 
 class MyWeatherImpl(WeatherImpl):
@@ -20,6 +21,8 @@ class MyWeatherImpl(WeatherImpl):
 
         for key in self.conf['locations'].keys():
             self._lazies[key] = SelfResetLazy(resource_name=f'weather({key})', fnCreateVal=lambda key=key: self.getWeather(key), resetAfter=float(self.conf['locations'][key]['interval']))
+            # Otherwise, we'll get a lot of messages
+            self._lazies[key].logger.level = logging.WARN
     
     def getWeather(self, key: str) -> dict:
         c = self.conf['locations'][key]
