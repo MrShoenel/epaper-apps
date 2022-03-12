@@ -123,9 +123,16 @@
             }
         }
         console.log(`Skipped rendering of ${news_items.length} more items (no visual space). Rendering took ${(+new Date) - start} ms. Waiting for a final timeout.`);
-        
-        await waitForFont('ul#news-list');
-        await waitForFont('p.desc span', true);
+
+        const $fontDummy = $('<div/>').attr('id', 'font-dummy').css('opacity', '0').append(
+            $('<span/>').addClass('reg').css('font-family', 'WenQuanYi Micro Hei').text('foo')
+        ).append(
+            $('<span/>').addClass('mono').css('font-family', 'WenQuanYi Micro Hei Mono').text('bar')
+        ).appendTo('body');
+
+        await waitForFont('#font-dummy .reg');
+        await waitForFont('#font-dummy .mono', true);
+        $fontDummy.remove();
 
         await timeout(5000);
         $('body').append($('<p/>').attr('id', 'ready'));

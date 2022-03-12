@@ -275,9 +275,15 @@
         renderHeader($('div#header-tomorrow'), time_tomorrow);
         renderHeader($('div#header-overmorrow'), time_overmorrow);
 
-        await waitForFont('div#events-tomorrow');
-        await waitForFont('div#events-overmorrow');
-        await waitForFont('div#header-tomorrow span', true);
+        const $fontDummy = $('<div/>').attr('id', 'font-dummy').css('opacity', '0').append(
+            $('<span/>').addClass('reg').css('font-family', 'WenQuanYi Micro Hei').text('foo')
+        ).append(
+            $('<span/>').addClass('mono').css('font-family', 'WenQuanYi Micro Hei Mono').text('bar')
+        ).appendTo('body');
+
+        await waitForFont('#font-dummy .reg');
+        await waitForFont('#font-dummy .mono', true);
+        $fontDummy.remove();
 
         await timeout(100);
         $('body').append($('<p/>').attr('id', 'ready'));
