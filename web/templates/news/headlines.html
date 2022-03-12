@@ -63,7 +63,9 @@
                     $('<span/>').css('background-image', `url("${item.urlToImage}")`)
                 )
             ).append(
-                $('<h1/>').text(item.title)
+                $('<h1/>').text(item.title).click(() => {
+                    window.open(item.url, '_blank')
+                })
             ).append(
                 $('<p/>').addClass('desc').attr('style', `-webkit-line-clamp: ${view_config.lines_desc} !important`).text(item.description).prepend($('<span/>').text(`${pad10(item.publishedAt.hour)}:${pad10(item.publishedAt.minute)}`))
             );
