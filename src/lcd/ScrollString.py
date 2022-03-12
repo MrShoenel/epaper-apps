@@ -15,21 +15,36 @@ class BounceString:
         return self
 
     def bounce(self, by=1):
+        s = self.fn()
+        if (self.width - len(s)) != self.b:
+            # If the length changes, we start over.
+            self.b = self.width - len(s)
+            self.reset()
+        
+        large = len(s) > self.width
+        
+        o = self.b
+        if large:
+            o *= -1
+
         if self.r:
-            if self.pos < self.b:
-                self.pos = self.pos + by
-            if self.pos >= self.b:
-                self.pos = self.b
+            if self.pos < o:
+                self.pos += by
+            if self.pos >= o:
+                self.pos = o
                 self.r = False
         else:
             if self.pos > 0:
-                self.pos = self.pos - by
+                self.pos -= by
             if self.pos <= 0:
                 self.pos = 0
                 self.r = True
 
-        s = self.fn()
+        if large:
+            return s[self.pos:(self.pos + self.width)]
+
         return s.rjust(len(s) + self.pos).ljust(self.width)
+
 
 
 
