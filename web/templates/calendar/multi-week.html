@@ -67,21 +67,24 @@
             resolve();
         });
 
-        const waitForFont = sel => new Promise(async resolve => {
+        const waitForFont = (sel, mono = false) => new Promise(async resolve => {
             while (true) {
-                let s = getComputedStyle(document.querySelector(sel))
-                if (s.fontFamily.toLowerCase().indexOf('wenquan') >= 0) {
-                    break
+                let s = getComputedStyle(document.querySelector(sel));
+                let f = s.fontFamily.toLowerCase();
+                if (f.indexOf('wenquan') >= 0) {
+                    if (mono && f.indexOf('mono') === -1) {
+                        continue;
+                    }
+                    break;
                 } else {
-                    await timeout(20)
+                    await timeout(20);
                 }
             }
-            await timeout(50) // A final timeout to wait for the font to propagate to all other elements.
+            await timeout(50); // A final timeout to wait for the font to propagate to all other elements.
             resolve();
         });
 
         await waitForElem('div#calendar');
-        await waitForFont('div#calendar');
 
         const renderMonthlyCalendar = () => {
             let $tr = $('div#calendar thead tr');
@@ -171,9 +174,13 @@
                 fontSize: '12px'
             })).appendTo($today);
         };
+        
+        await waitForFont('div#calendar');
+        await waitForFont('span.today', true);
 
         await timeout(100);
         $('body').append($('<p/>').attr('id', 'ready'));
+        console.log('Ready!');
     });
     </script>
 </body>

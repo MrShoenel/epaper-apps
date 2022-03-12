@@ -57,16 +57,20 @@
             resolve()
         });
 
-        const waitForFont = sel => new Promise(async resolve => {
+        const waitForFont = (sel, mono = false) => new Promise(async resolve => {
             while (true) {
-                let s = getComputedStyle(document.querySelector(sel))
-                if (s.fontFamily.toLowerCase().indexOf('wenquan') >= 0) {
-                    break
+                let s = getComputedStyle(document.querySelector(sel));
+                let f = s.fontFamily.toLowerCase();
+                if (f.indexOf('wenquan') >= 0) {
+                    if (mono && f.indexOf('mono') === -1) {
+                        continue;
+                    }
+                    break;
                 } else {
-                    await timeout(20)
+                    await timeout(20);
                 }
             }
-            await timeout(50) // A final timeout to wait for the font to propagate to all other elements.
+            await timeout(50); // A final timeout to wait for the font to propagate to all other elements.
             resolve();
         });
 
@@ -75,8 +79,6 @@
 
         await waitForElemWidth($tomorrow);
         await waitForElemWidth($overmorrow);
-        await waitForFont('div#events-tomorrow');
-        await waitForFont('div#events-overmorrow');
 
         const pad10 = s => {
             if (`${s}`.length == 1) {
@@ -273,8 +275,13 @@
         renderHeader($('div#header-tomorrow'), time_tomorrow);
         renderHeader($('div#header-overmorrow'), time_overmorrow);
 
+        await waitForFont('div#events-tomorrow');
+        await waitForFont('div#events-overmorrow');
+        await waitForFont('div#header-tomorrow span', true);
+
         await timeout(100);
         $('body').append($('<p/>').attr('id', 'ready'));
+        console.log('Ready!');
     });
     </script>
 </body>
