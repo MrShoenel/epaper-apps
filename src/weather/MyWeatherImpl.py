@@ -51,4 +51,8 @@ class MyWeatherImpl(WeatherImpl):
     @property
     def currentTemp(self) -> float:
         first_key = list(self.conf['locations'].keys())[0]
-        return self._lazies[first_key].value['current']['temp']
+        lazy = self._lazies[first_key]
+        if lazy.hasValue:
+            return lazy.value['current']['temp']
+        # We'll always return something to make this non-blocking.
+        return 0.0
