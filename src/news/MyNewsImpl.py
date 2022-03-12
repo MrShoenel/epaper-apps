@@ -52,9 +52,11 @@ class MyNewsImpl(NewsImpl):
             return n.lower()
 
         items_filtered = []
+        filter_general = list(map(lambda s: s.lower(), self.conf['filter']))
 
         for key, lazy in self._lazies.items():
             conf = self.conf['urls'][key]
+            filter_all = filter_general + list(map(lambda s: s.lower(), conf['filter']))
 
             for item in lazy.value:
                 if item['title'] is None or item['description'] is None:
@@ -68,7 +70,7 @@ class MyNewsImpl(NewsImpl):
                 item['description'] = unescape(item['description'])
 
                 cont = False
-                for term in map(lambda s: s.lower(), conf['filter']):
+                for term in filter_all:
                     if term in s(item['title']) or term in s(item['description']) or term in s(item['author']) or term in s(item['source']['name']):
                         cont = True
                         break
