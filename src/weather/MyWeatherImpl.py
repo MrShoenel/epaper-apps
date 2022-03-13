@@ -21,6 +21,7 @@ class MyWeatherImpl(WeatherImpl):
 
         for key in self.conf['locations'].keys():
             self._lazies[key] = SelfResetLazy(resource_name=f'weather({key})', fnCreateVal=lambda key=key: self.getWeather(key), resetAfter=float(self.conf['locations'][key]['interval']))
+            self._lazies[key].valueFuture # Trigger creation of value, but don't wait for the Future
             # Otherwise, we'll get a lot of messages
             # self._lazies[key].logger.level = logging.WARN
         
@@ -53,8 +54,8 @@ class MyWeatherImpl(WeatherImpl):
                     return loads(fp.read())
             else:
                 self.logger.error(f'Cannot load weather for "{key}" and no previous state exists.')
-                return {}
-    
+                raise e
+
 
     @property
     def currentTemp(self) -> float:
@@ -62,8 +63,10 @@ class MyWeatherImpl(WeatherImpl):
         Implemented in a way such that it never blocks.
         """
         lazy = self._lazies[self.primary_loc]
-        if not lazy.hasValue:
-            lazy.valueFuture # Trigger creation of value, but don't wait for the Future
-            return self.last_temp
-        self.last_temp = float(lazy.value['current']['temp'])
+
+        try:
+            self.last_temp = float(lazy.value['current']['temp'])
+        except:
+            self.logger.warn(f'Current temperature cannot be fetched. Returning last temperature of {self.last_temp}°C.')
+        
         return self.last_temp
