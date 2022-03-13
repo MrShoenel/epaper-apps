@@ -1,0 +1,44 @@
+---
+title: "Weather graphs"
+output:
+  md_document:
+    toc: yes
+    toc_depth: 6
+    df_print: kable
+    variant: gfm
+  bookdown::pdf_document2:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 6
+    df_print: kable
+    keep_tex: yes
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+    df_print: kable
+  word_document: default
+---
+
+```{r}
+data_folder <- Sys.getenv("DATA_FOLDER")
+
+writeLines(text = .libPaths(), paste0(data_folder, "/today.txt"))
+```
+
+
+```{r}
+hourly <- read.csv(file = paste0(data_folder, "/weather_hourly.csv"))
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(data = hourly, mapping = aes(x = dt, y = temp)) + geom_line()
+
+ggsave(filename =
+  paste0(data_folder, "/temp_hourly.png"),
+  width = 800, height = 240, units = "px")
+```
