@@ -27,6 +27,7 @@ kaitaistruct==0.9
 MarkupSafe==2.0.1
 numpy==1.22.2
 outcome==1.1.0
+pandas==1.4.1
 Pillow==9.0.1
 pyasn1==0.4.8
 pycodestyle==2.8.0
