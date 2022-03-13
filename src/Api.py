@@ -6,8 +6,8 @@ from threading import Thread
 from src.CustomFormatter import CustomFormatter
 
 
-def _static_serve(path):
-    return send_from_directory(directory='../web', path=path)
+def _static_serve(dir, path):
+    return send_from_directory(directory=dir, path=path)
 
 def _add_header(res):
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -55,7 +55,7 @@ class Api:
 
     def __init__(self):
         self.routes = set()
-        self.addRoute('/web/<path:path>', _static_serve)
+        self.addRoute('/web/<path:path>', lambda path: _static_serve('../web', path=path))
 
         def quit_():
             temp = request.environ.get('werkzeug.server.shutdown')
@@ -108,4 +108,7 @@ class Api:
         _api.add_url_rule(rule=route, endpoint=route, view_func=temp, **options)
 
         return self
-
+    
+    def addStaticServe(self, static_path, directory):
+        self.addRoute(f'/{static_path}/<path:path>', lambda path: _static_serve(dir=directory, path=path))
+        return self
