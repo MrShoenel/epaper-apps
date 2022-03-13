@@ -22,7 +22,12 @@ class MyWeatherImpl(WeatherImpl):
         for key in self.conf['locations'].keys():
             self._lazies[key] = SelfResetLazy(resource_name=f'weather({key})', fnCreateVal=lambda key=key: self.getWeather(key), resetAfter=float(self.conf['locations'][key]['interval']))
             # Otherwise, we'll get a lot of messages
-            self._lazies[key].logger.level = logging.WARN
+            # self._lazies[key].logger.level = logging.WARN
+        
+        self.primary_loc = list(self.conf['locations'].keys())[0]
+        self.logger.debug(f'The primary location for weather is "{self.primary_loc}"')
+
+        self.last_temp: float = 0.0
     
     def getWeather(self, key: str) -> dict:
         c = self.conf['locations'][key]
@@ -50,9 +55,12 @@ class MyWeatherImpl(WeatherImpl):
 
     @property
     def currentTemp(self) -> float:
-        first_key = list(self.conf['locations'].keys())[0]
-        lazy = self._lazies[first_key]
-        if lazy.hasValue:
-            return lazy.value['current']['temp']
-        # We'll always return something to make this non-blocking.
-        return 0.0
+        """
+        Implemented in a way such that it never blocks.
+        """
+        lazy = self._lazies[self.primary_loc]
+        if not lazy.hasValue:
+            lazy.valueFuture # Trigger creation of value, but don't wait for the Future
+            return self.last_temp
+        self.last_temp = float(lazy.value['current']['temp'])
+        return self.last_temp
