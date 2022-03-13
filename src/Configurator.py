@@ -97,6 +97,7 @@ class Configurator:
         self.res_ssm: SelfResetLazy[AtomicResource[ScreenshotMaker]] = None
 
         self._svc_container: Dict[Type, T] = {}
+        self.api.addStaticServe(static_path='data', directory=self.data_folder)
     
     def getService(self, klass: Type[T]) -> T:
         if klass in self._svc_container.keys():
