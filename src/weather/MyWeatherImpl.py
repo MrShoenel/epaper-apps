@@ -4,8 +4,11 @@ from src.SelfResetLazy import SelfResetLazy
 from os.path import abspath, join, exists
 from typing import Any
 from jsons import loads
+from pandas import json_normalize
 import requests
 import logging
+import os
+import subprocess
 
 
 class MyWeatherImpl(WeatherImpl):
@@ -70,3 +73,21 @@ class MyWeatherImpl(WeatherImpl):
             self.logger.warn(f'Current temperature cannot be fetched. Returning last temperature of {self.last_temp}°C.')
         
         return self.last_temp
+    
+    @property
+    def hourly(self) -> list[dict[str, Any]]:
+        lazy = self._lazies[self.primary_loc]
+
+        def temp(h):
+            h['weather'] = h['weather'][0]
+            return h
+
+        try:
+            # unpack nested array,
+            hourly = list(map(temp, lazy.value['hourly']))
+            # then flatten nested properties
+            temp = json_normalize(hourly)
+            return temp.to_dict('records')
+        except Exception as e:
+            self.logger.error(f'Cannot get hourly weather, exception was: "{str(e)}"')
+            return []
