@@ -46,7 +46,7 @@ class Datetime(LcdApp):
 
         def timeFn():
             dt = datetime.now()
-            line = f'{pad(dt.hour)}:{pad(dt.minute)}:{pad(dt.second)}'
+            line = f'{dt.hour}:{pad(dt.minute)}:{pad(dt.second)}'
 
             if self._showTemp:
                 temp = self.lazy_weather.value.currentTemp
@@ -55,7 +55,7 @@ class Datetime(LcdApp):
         
         def dateFn():
             dt = datetime.now()
-            line = f'{pad(dt.day)}. {calendar.month_abbr[dt.month].capitalize()} {pad(dt.year)}'
+            line = f'{dt.day}. {calendar.month_abbr[dt.month].capitalize()} {pad(dt.year)}'
             return line
 
         self._s1 = BounceString(strFn=timeFn) if self.scroll else ScrollString(strFn=timeFn)
