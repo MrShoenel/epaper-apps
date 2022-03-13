@@ -6,6 +6,7 @@ import calendar
 import pathlib
 import atexit
 import locale
+import subprocess
 import requests
 from base64 import b64decode
 from PIL import Image
@@ -34,6 +35,7 @@ from flask import render_template
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from urllib.parse import urlencode, urlparse
+from pandas import DataFrame
 
 T = TypeVar('T')
 
@@ -405,7 +407,35 @@ class Configurator:
         self.logger.debug(f'Registering service for weather: "{user_impl.__class__.__name__}"')
         self._svc_container[WeatherImpl] = user_impl
 
-        # TODO: Later, when we require routes, add them here.
+
+        def renderGraphsWithR(which: str) -> tuple[int, str, str]:
+            env = {**os.environ, **{ 'DATA_FOLDER': self.data_folder }}
+            proc = subprocess.Popen(
+                args=f'Rscript -e "rmarkdown::render(\'{which}.Rmd\')"',
+                env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                cwd=abspath(join(os.path.dirname(__file__), 'weather')))
+
+            res_out = proc.stdout.read()
+            res_err = proc.stderr.read()
+            return proc.wait(), res_out, res_err
+
+        def renderWeatherToday():
+            # Here, we'll first need to write the hourly weather to CSV,
+            # then render some charts with R. Finally, we'll serve the
+            # template.
+            DataFrame(user_impl.hourly).to_csv(abspath(join(self.data_folder, 'weather_hourly.csv')))
+
+            ret_code, std_out, std_err = renderGraphsWithR(which='today')
+            if ret_code != 0:
+                raise Exception(f'Cannot render graphs with R, return code was {ret_code}. STDERR was "{std_err}". STDOUT was "{std_out}".')
+
+
+            return render_template(
+                'weather/today.html',
+                view_config=self.config['views']['today']
+            )
+        
+        self.api.addRoute(route='/weather/today', fn=renderWeatherToday)
 
         return self
 
