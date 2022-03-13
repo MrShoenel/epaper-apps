@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>weather: today</title>
+    <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="shortcut icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" />
+    <link rel="stylesheet/less" type="text/css" href="/web/assets/default.less" />
+    <script type="text/javascript" src="/web/assets/less@4.js"></script>
+</head>
+<!--
+    This template shows
+-->
+<body>
+    <script type="text/javascript">
+        const view_config = {{ view_config|tojson|safe }};
+    </script>
+    <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
+
+    <div style="width: 800px; height: 480px; border: 0px solid #000; border-width: 0 1px 1px 0; overflow: hidden;">
+			<p>
+				<img src="/data/temp_hourly.png" />
+			</p>
+    </div>
+    <script type="text/javascript">
+    $(document).ready(async() => {
+        const timeout = ms => new Promise((resolve, reject) => {
+            setTimeout(resolve, ms)
+        });
+
+        const waitForFont = (sel, mono = false) => new Promise(async resolve => {
+            while (true) {
+                let s = getComputedStyle(document.querySelector(sel));
+                let f = s.fontFamily.toLowerCase();
+                if (f.indexOf('wenquan') >= 0) {
+                    if (mono && f.indexOf('mono') === -1) {
+                        continue;
+                    }
+                    break;
+                } else {
+                    await timeout(20);
+                }
+            }
+            await timeout(50); // A final timeout to wait for the font to propagate to all other elements.
+            resolve();
+        });
+
+        const $fontDummy = $('<div/>').attr('id', 'font-dummy').css('opacity', '0').append(
+            $('<span/>').addClass('reg').css('font-family', 'WenQuanYi Micro Hei').text('foo')
+        ).append(
+            $('<span/>').addClass('mono').css('font-family', 'WenQuanYi Micro Hei Mono').text('bar')
+        ).appendTo('body');
+
+        await waitForFont('#font-dummy .reg');
+        await waitForFont('#font-dummy .mono', true);
+        $fontDummy.remove();
+
+        await timeout(500);
+        $('body').append($('<p/>').attr('id', 'ready'));
+        console.log('Ready!');
+    });
+    </script>
+</body>
+</html>
