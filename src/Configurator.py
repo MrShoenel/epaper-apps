@@ -401,7 +401,7 @@ class Configurator:
         klass = getattr(mod, c['user_impl'])
         user_impl: WeatherImpl = klass(c, self.data_folder)
 
-        self.logger.debug(f'Registering service for news: "{user_impl.__class__.__name__}"')
+        self.logger.debug(f'Registering service for weather: "{user_impl.__class__.__name__}"')
         self._svc_container[WeatherImpl] = user_impl
 
         # TODO: Later, when we require routes, add them here.
