@@ -16,8 +16,8 @@ class SelfResetLazy(Generic[T]):
         self._has_val = False
         self._semaphore = Semaphore(1)
 
-        self.fnCreateVal = fnCreateVal
-        self.fnDestroyVal = fnDestroyVal
+        self._fnCreateVal = fnCreateVal
+        self._fnDestroyVal = fnDestroyVal
         self._resetAfter = resetAfter
         self._timer: Timer = None
 
@@ -47,9 +47,9 @@ class SelfResetLazy(Generic[T]):
         try:
             self._semaphore.acquire()
             if self._has_val:
-                if callable(self.fnDestroyVal):
+                if callable(self._fnDestroyVal):
                     self.logger.debug(f'Attempting to destroy the value by calling "fnDestroyVal()".')
-                    self.fnDestroyVal(self._val) # Pass in the current value
+                    self._fnDestroyVal(self._val) # Pass in the current value
                 self._val = None
                 self._has_val = False
         except Exception as e:
@@ -88,7 +88,7 @@ class SelfResetLazy(Generic[T]):
             if not self._has_val:
                 start = timer()
                 self.logger.debug(f'Calling "fnCreateVal()" to lazily produce value.')
-                self._val = self.fnCreateVal()
+                self._val = self._fnCreateVal()
                 self._has_val = True
                 self.logger.debug(f'"fnCreateVal()" took {format(timer() - start, ".2f")} seconds to produce a value.')
                 self._setTimer()
