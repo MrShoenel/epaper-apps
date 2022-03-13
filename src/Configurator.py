@@ -334,7 +334,7 @@ class Configurator:
         def renderIframe(url):
             parsed = urlparse(url=url)
             base = f'{parsed.scheme}://{parsed.netloc}'
-            text = requests.get(url).text
+            text = requests.get(url, timeout=30).text
             # Let's replace all relative links and sources with the URL's origin:
             text = re.sub(pattern=r'src="/(?!/)', repl=f'src="{base}/', string=text)
             text = re.sub(pattern=r'srcset="/(?!/)', repl=f'srcset="{base}/', string=text)

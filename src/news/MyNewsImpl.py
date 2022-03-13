@@ -25,7 +25,7 @@ class MyNewsImpl(NewsImpl):
     def getHeadlineItems(self, key: str):
         url: str = self.conf['sources'][key]['url']
         url = url.replace('__APIKEY__', self.conf['api_key'])
-        raw = requests.get(url=url).text
+        raw = requests.get(url=url, timeout=10).text
         data = loads(raw)
         file = abspath(join(self.data_folder, f'news_{key}.json'))
 

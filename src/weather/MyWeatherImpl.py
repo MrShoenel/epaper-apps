@@ -39,7 +39,7 @@ class MyWeatherImpl(WeatherImpl):
         file = abspath(join(self.data_folder, f'weather_{key}.json'))
 
         try:
-            raw = requests.get(url=url).text
+            raw = requests.get(url=url, timeout=10).text
             with open(file=file, mode='w', encoding='utf-8') as fp:
                 fp.write(raw)
             return loads(raw)

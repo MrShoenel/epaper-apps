@@ -135,7 +135,7 @@ class IntervalCalendar:
             while retries > 0:
                 retries -= 1
                 try:
-                    res = requests.get(url=self.url)
+                    res = requests.get(url=self.url, timeout=10)
                     if res.status_code == 200:
                         # Buffer this calendar to disk:
                         with open(file=ical_file, mode='w', encoding='utf-8') as fp:
