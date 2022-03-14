@@ -1,6 +1,6 @@
 from concurrent.futures import Future
 from threading import Semaphore, Timer, Thread
-from typing import Callable, TypeVar, Generic, Any
+from typing import Callable, TypeVar, Generic, Any, Union
 from timeit import default_timer as timer
 from src.CustomFormatter import CustomFormatter
 from queue import Queue
@@ -73,7 +73,11 @@ class SelfResetLazy(Generic[T]):
             self._timer = Timer(interval=self._resetAfter, function=self.unsetValue)
             self._timer.start()
         return self
-    
+
+    @property
+    def hasValueVolatile(self) -> bool:
+        return self._has_val
+
     @property
     def hasValue(self) -> bool:
         try:
@@ -81,6 +85,9 @@ class SelfResetLazy(Generic[T]):
             return self._has_val
         finally:
             self._semaphore.release()
+
+    def valueVolatile(self) -> Union[None, T]:
+        return self._val
 
     @property
     def value(self) -> T:
