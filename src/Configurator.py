@@ -8,6 +8,7 @@ import atexit
 import locale
 import subprocess
 import requests
+from fasteners import InterProcessLock
 from base64 import b64decode
 from PIL import Image
 from io import BytesIO
@@ -495,6 +496,9 @@ class Configurator:
             res_atom: AtomicResource[ScreenshotMaker] = None
             res: ScreenshotMaker = None
 
+            lock: InterProcessLock = None
+            lock_gotten = False
+
             try:
                 res_atom = self.res_ssm.value
                 res = res_atom.obtain()
@@ -502,6 +506,9 @@ class Configurator:
                 start = timer()
                 self.logger.debug(f'Taking screenshot of screen "{which}" in resolution {conf["width"]}x{conf["height"]}.')
                 blackimg, redimg = res.screenshot(**conf)
+
+                lock = InterProcessLock(path=abspath(join(self.data_folder, 'write.lock')))
+                lock_gotten = lock.acquire()
 
                 with open(file=abspath(join(self.data_folder, f'{which}_b.png')), mode='wb') as fp:
                     blackimg.save(fp)
@@ -518,6 +525,8 @@ class Configurator:
             except Exception as e:
                 return f'ERROR: {str(e)}', 500
             finally:
+                if lock_gotten:
+                    lock.release()
                 if type(res) is ScreenshotMaker:
                     res_atom.recover(item=res)
 
