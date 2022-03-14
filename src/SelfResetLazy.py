@@ -111,16 +111,15 @@ class SelfResetLazy(Generic[T]):
     def valueFuture(self) -> Future[T]:
         f = Future()
 
-        def setVal():
-            try:
-                f.set_result(self.value)
-            except Exception as e:
-                f.set_exception(e)
-
         temp = self._val
         if type(temp) is T and self.hasValueVolatile:
             f.set_result(temp)
         else:
+            def setVal():
+                try:
+                    f.set_result(self.value)
+                except Exception as e:
+                    f.set_exception(e)
             Thread(target=setVal).start()
 
         return f
