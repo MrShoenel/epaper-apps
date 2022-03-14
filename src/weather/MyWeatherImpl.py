@@ -67,11 +67,16 @@ class MyWeatherImpl(WeatherImpl):
         """
         lazy = self._lazies[self.primary_loc]
 
-        try:
-            self.last_temp = float(lazy.value['current']['temp'])
-        except:
-            self.logger.warn(f'Current temperature cannot be fetched. Returning last temperature of {self.last_temp}°C.')
-        
+        def setTemp(temp: float):
+            self.last_temp = temp
+
+        lazy.valueFuture.add_done_callback(lambda fut: setTemp(float(fut.result()['current']['temp'])))
+
+        # These properties do not block
+        temp = lazy.valueVolatile
+        if type(temp) is dict and lazy.hasValueVolatile:
+            self.last_temp = float(temp['current']['temp'])
+
         return self.last_temp
     
     @property
