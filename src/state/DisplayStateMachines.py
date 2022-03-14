@@ -57,9 +57,11 @@ class ePaperStateMachine(StateManager):
 
         fp_black = None
         fp_red = None
+        lock: InterProcessLock = None
+        lock_gotten = False
         try:
             lock = InterProcessLock(path=abspath(join(data_folder, 'write.lock')))
-            lock.acquire()
+            lock_gotten = lock.acquire()
 
             file_black = abspath(join(data_folder, f'{state_to}_b.png'))
             file_red = abspath(join(data_folder, f'{state_to}_r.png'))
@@ -119,7 +121,8 @@ class ePaperStateMachine(StateManager):
                 fp_black.close()
             if not fp_red is None and not fp_red.closed:
                 fp_red.close()
-            lock.release()
+            if lock_gotten:
+                lock.release()
             self._busy = False
 
         # Before releasing, wait a few seconds so it won't be triggered too often.
