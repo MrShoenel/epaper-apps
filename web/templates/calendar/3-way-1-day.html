@@ -263,9 +263,9 @@
             if (time_now.hour >= divHours[0] && time_now.hour <= divHours[divHours.length-1]) {
                 $today.append($('<div/>').css({
                     position: 'absolute',
-                    left: '24px',
+                    left: '0',
                     top: `${$(`div#hour-${time_now.hour}`).offset().top + time_now.minute / 60 * divHoursHeight - 1}px`,
-                    width: `${$today.width()-24}px`,
+                    width: `${$today.width()}px`,
                     height: '3px',
                     backgroundColor: 'red'
                 }));
