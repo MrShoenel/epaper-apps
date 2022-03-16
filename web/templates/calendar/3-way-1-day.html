@@ -230,17 +230,10 @@
         
         const renderEventsOfToday = () => {
             // We'll show events next to each other, with some space in between.
-            // Also, there will be some space on the right to display the time.
-            const firstEvent = events_of_the_day.length > 0 ? events_of_the_day[0] : null;
-            let earliestHour = firstEvent === null ? 0 : firstEvent.start.hour;
-            const lastEvent = events_of_the_day.length > 0 ? events_of_the_day[events_of_the_day.length - 1] : null;
-            let latestHour = lastEvent === null ? 23 : lastEvent.end.hour;
-            if (firstEvent.start.day < time_now.day) {
-                earliestHour = 0;
-            }
-            if (lastEvent.end.day > time_now.day) {
-                latestHour = 23;
-            }
+            // Also, there will be some space on the left to display the time.
+            let earliestHour = events_of_the_day.sort((a, b) => a.start.ts - b.start.ts)[0].start.hour;
+            const temp = events_of_the_day.filter(e => e.end.year === time_now.year && e.end.month === time_now.month && e.end.day === time_now.day);
+            let latestHour = temp.sort((a, b) => b.end.ts - a.end.ts)[0].end.hour;
 
             // Now create some space:
             if (earliestHour > 0) {

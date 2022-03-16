@@ -127,10 +127,11 @@
         const renderEventsForDay = (evts, time, $container) => {
             // We'll show events next to each other, with some space in between.
             // Also, there will be some space on the right to display the time.
-            const firstEvent = evts.length > 0 ? evts[0] : null;
-            let earliestHour = firstEvent === null ? 0 : firstEvent.start.hour;
-            const lastEvent = evts.length > 0 ? evts[evts.length - 1] : null;
-            let latestHour = lastEvent === null ? 23 : lastEvent.end.hour;
+            const firstEvent = evts.sort((a, b) => a.start.ts - b.start.ts)[0];
+            let earliestHour = firstEvent.start.hour;
+            const temp = evts.filter(e => e.end.year === time.year && e.end.month === time.month && e.end.day === time.day);
+            const lastEvent = temp.sort((a, b) => b.end.ts - a.end.ts)[0];
+            let latestHour = lastEvent.end.hour;
             if (firstEvent.start.day < time.day) {
                 earliestHour = 0;
             }
