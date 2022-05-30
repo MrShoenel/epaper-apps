@@ -134,11 +134,13 @@
 
                     let $events = $('<div/>').addClass('eventlist').appendTo($div);
                     for (const e of wd.events.filter(e => !e.is_task).sort((a, b) => a.start.ts - b.start.ts)) {
-                        $events.append($('<div/>').append(
-                            $('<span/>').addClass('start-time').text(`${pad10(e.start.hour)}:${pad10(e.start.minute)}`)
-                        ).append(
-                            $('<span/>').text(e.title)
-                        ));
+                        const $d = $('<div/>');
+                        if (e.start.hour !== void 0) {
+                            $d.append(
+                                $('<span/>').addClass('start-time').text(`${pad10(e.start.hour)}:${pad10(e.start.minute)}`)
+                            );
+                        }
+                        $d.append($('<span/>').text(e.title)).appendTo($events);
                     }
 
                     $td.appendTo($tr);
