@@ -411,7 +411,7 @@ class Configurator:
 
         for key in c['locations'].keys():
             self.logger.debug(f'Registering YR-weather for location: "{key}"')
-            self.api.addRoute(route=f'/weather-yr/{key}', fn=lambda key=key: renderYrWeather(location=key))
+            self.api.addRoute(route=f'/weather-yr/weather-yr-{key}', fn=lambda key=key: renderYrWeather(location=key))
         
 
         def getYrSvg(location: str):
