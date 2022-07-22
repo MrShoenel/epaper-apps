@@ -398,6 +398,29 @@ class Configurator:
         self.logger.debug('Added routes for user-screens.')
 
         return self
+
+    def setupWeatherYr(self):
+        c = self.config['weather-yr']
+
+        def renderYrWeather(location: str):
+            return render_template(
+                'weather-yr/yr-svg.html',
+                view_config=self.config['views'][f'weather-yr-{location}'],
+                location=location
+            )
+
+        for key in c['locations'].keys():
+            self.logger.debug(f'Registering YR-weather for location: "{key}"')
+            self.api.addRoute(route=f'/weather-yr/{key}', fn=lambda key=key: renderYrWeather(location=key))
+        
+
+        def getYrSvg(location: str):
+            return requests.get(url=c['locations'][location]).text
+
+        self.api.addRoute(route=f'/weather-yr/svg', fn=getYrSvg, methods=['GET'])
+        
+        return self
+
     
     def setupWeather(self):
         c = self.config['weather']

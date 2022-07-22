@@ -10,6 +10,7 @@ if c.useScreenshotService:
 c.setupUserscreens()
 c.setupNews()
 c.setupWeather()
+c.setupWeatherYr()
 c.startApi(blocking=False)
 if c.calibrateEpaperOnStart:
     c.calibrateEpaper()
