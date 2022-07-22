@@ -18,8 +18,8 @@
     </script>
     <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
 
-    <div id="wrapper" style="width: 800px; height: 480px; border: 0px solid #000; border-width: 0 1px 1px 0; overflow: hidden;">
-			{{ weather_svg|safe }}
+    <div style="width: 800px; height: 480px; border: 0px solid #000; border-width: 0 1px 1px 0; overflow: hidden;">
+			<div id="wrapper">{{ weather_svg|safe }}</div>
     </div>
     <script type="text/javascript">
     $(document).ready(async() => {
