@@ -15,15 +15,35 @@
 <body>
     <script type="text/javascript">
         const view_config = {{ view_config|tojson|safe }};
+        const locale = {{ locale|tojson|safe }}.split('.')[0].replace('_', '-');
+        const time_now = {{ time_now|tojson|safe }};
+        const day_names = {{ day_names|tojson|safe }};
+        const month_names = {{ month_names|tojson|safe }};
+        /** @type [] */
+        const forecast_daily = {{ forecast_daily|tojson|safe }};
+        const forecast_latlon = {{ forecast_latlon|tojson|safe }};
     </script>
     <script type="text/javascript" src="/web/assets/jquery-3.6.0.min.js"></script>
 
-    <div style="width: 800px; height: 480px; border: 0px solid #000; border-width: 0 1px 1px 0; overflow: hidden;">
-			<div id="wrapper">{{ weather_svg|safe }}</div>
+    <div style="width: 800px; height: 480px; border: 0px solid #000; border-width: 0 1px 1px 0; overflow: hidden; position: relative;">
+        <div id="wrapper">{{ weather_svg|safe }}</div>
+        <div id="overlay">
+            <h1>Weather: <span style="font-weight: 900; font-size: 110%;">{{ location }}</span> <span class="lat-lon">[{{ forecast_latlon[0]|tojson|safe }}</span>,<span class="lat-lon">{{ forecast_latlon[1]|tojson|safe }}]</span></h1>
+        </div>
+        <div id="summary-next-days">
+            <ul></ul>
+        </div>
     </div>
     <script type="text/javascript">
     $(document).ready(async() => {
-				await $.get('./svg?location={{ location }}').then(data => $(data.trim()).appendTo('div#wrapper'));
+        await $.get('./svg?location={{ location }}').then(data => $(data.trim()).appendTo('div#wrapper'));
+
+        const pad10 = s => {
+            if (`${s}`.length == 1) {
+                s = `0${s}`;
+            }
+            return s;
+        };
 
         const timeout = ms => new Promise((resolve, reject) => {
             setTimeout(resolve, ms)
@@ -55,6 +75,111 @@
         await waitForFont('#font-dummy .reg');
         await waitForFont('#font-dummy .mono', true);
         $fontDummy.remove();
+
+
+        const $overlay = $('div#overlay');
+
+        // Let's remove some stuff from the SVG:
+        $('g:has(text[class="served-by-header"])').remove();
+        $('g:has(text[class="location-header"])').remove();
+        // Remove first three SVG that are logos:
+        for (let i = 0; i < 3; i++) {
+            $($('svg svg')[0]).remove();
+        }
+
+
+        // Replace the labels for the next days in the SVG:
+        $('text.day-label').each((idx, elem) => {
+            const d = new Date(time_now.ts * 1e3 + (idx + 1) * 86400000)
+            , isoDay = (d.getDay() + 6) % 7 + 1;
+            $(elem).text(`${day_names[isoDay - 1]}, ${d.getDate()}. ${month_names[d.getMonth()]}`);
+        });
+
+
+        // Let's render the summary forecast for the next days.
+        const $summaryNextList = $('div#summary-next-days ul').css('column-count', Math.min(7, forecast_daily.length - 1));
+        const renderSummaryNextDays = async() => {
+            const renderSummary = item => new Promise((res, rej) => {
+                // https://openweathermap.org/img/wn/04d@4x.png
+                const $img = $('<img/>');
+                $img[0].onload = e => res();
+                $img[0].onerror = e => rej();
+                $img.attr('src', `https://openweathermap.org/img/wn/${item['weather.icon']}@4x.png`);
+                //$summaryNextList.append($('<li/>').text(Math.round(item['temp.day'])).append($img));
+
+                $li = $('<li/>');
+
+                $li.append($('<div/>').addClass('day').text(
+                    `${day_names[item['dt.iso_weekday'] - 1].substr(0, 3)}, ${item['dt.day']}.${item['dt.month']}.`
+                ));
+
+                /** @type string */
+                const desc = item['weather.description'];
+                $li.append($('<div/>').text(desc.substr(0, 1).toUpperCase() + desc.substr(1)));
+                
+                $li.append($('<div/>').addClass('day-night-temps').append(
+                    $('<div/>').append($('<span/>').addClass('img').append($img))
+                ).append(
+                    $('<div/>').append(
+                        $('<span/>').text(`${Math.round(item['temp.day'])}°C (day)`)
+                    ).append(
+                        $('<br/>')
+                    ).append(
+                        $('<span/>').text(`${Math.round(item['temp.night'])}°C (night)`)
+                    )
+                ));
+
+                $li.append($('<div/>').text(`Prec.: ${(item['rain'] || 0).toFixed(1)} mm, l/m²`));
+
+                $li.append($('<div/>').text(`Wind: ${Math.round(item.wind_speed)} (${Math.round(item.wind_gust)}) m/s`));
+
+                $li.append($('<div/>').text(`Humidity: ${Math.round(item.humidity)}%`));
+                
+                $li.append($('<div/>').text(`Press.: ${(item['pressure'] || 0).toLocaleString(locale, {maximumFractionDigits: 0})} hPa`));
+
+                $li.appendTo($summaryNextList);
+            });
+
+
+            const promises = forecast_daily.slice(1, 8).map(item => {
+                return renderSummary(item);
+            });
+            
+            return Promise.all(promises);
+        };
+        
+        await renderSummaryNextDays();
+
+
+        const renderLastUpdated = () => {
+            $('<div/>').css({
+                position: 'absolute',
+                border: '1px solid #999',
+                borderWidth: '0 1px 1px',
+                width: '110px',
+                //left: `${$overlay.width() / 2}px`,
+                right: '15px',
+                top: '0px',
+                marginLeft: '-56px',
+                backgroundColor: '#eee',
+                textAlign: 'center',
+                fontFamily: 'WenQuanYi Micro Hei',
+                letterSpacing: '-1px',
+                lineHeight: '14px'
+            }).append(
+                $('<span/>').text('Updated:').css({
+                    marginRight: '.5ex'
+                })
+            ).append($('<span/>').text(`${pad10(time_now.hour)}:${pad10(time_now.minute)}:${pad10(time_now.second)}`).css({
+                fontFamily: 'WenQuanYi Micro Hei Mono',
+                fontWeight: 900,
+                fontSize: '12px'
+            })).appendTo($overlay);
+        };
+
+        renderLastUpdated();
+
+
 
         await timeout(500);
         $('body').append($('<p/>').attr('id', 'ready'));

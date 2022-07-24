@@ -1,14 +1,113 @@
 
 
-/*text {
+text {
 	font-family: 'WenQuanYi Micro Hei' !important;
 }
 
 text[class*="axis"] {
 	font-family: 'WenQuanYi Micro Hei Mono' !important;
 	letter-spacing: -.1ex;
-}*/
+}
 
 div#wrapper {
-	transform: scale(1.023018) translateX(10px) translateY(15px);
+	transform: scale(1.023018) translateX(10px) translateY(-40px);
+}
+
+div#overlay, div#summary-next-days {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	border-bottom: 1px solid #aaa;
+}
+
+div#overlay {
+	background-color: #eee;
+
+	h1 {
+		font-size: 18px;
+		margin: 5px .5ex;
+		font-weight: 100;
+	}
+
+	span.lat-lon {
+		font-family: 'WenQuanYi Micro Hei Mono';
+		font-size: 12px;
+		font-weight: 900;
+		letter-spacing: -.125ex;
+		margin-left: 1em;
+
+		+span {
+			margin-left: .5ex;
+		}
+	}
+}
+
+div#summary-next-days {
+	top: 355px;
+	border-top: 1px solid #aaa;
+	border-bottom: none;
+
+	ul {
+		margin: 0;
+		padding: 0;
+		column-gap: 0;
+		list-style-type: none;
+
+		li {
+			font-size: 13px;
+			background-color: #eee;
+
+			&:not(:last-child) {
+				border-right: 1px solid #ccc;
+			}
+
+			div.day {
+				background-color: #eee;
+				text-align: center;
+
+				+div {
+					background-color: #fff;
+					text-align: center;
+				}
+			}
+
+			div.day-night-temps {
+
+				display: grid;
+				grid-template-columns: 35px 1fr;
+				grid-column-gap: 0;
+				grid-row-gap: 0;
+				justify-items: stretch;
+				align-items: stretch;
+				background-color: #fff;
+
+				>div:first-child {
+					padding-left: 2px;
+				}
+				>div:nth-child(2) {
+					padding-top: 3px;
+				}
+
+				span.img {
+					width: 32px;
+					height: 32px;
+					display: inline-block;
+					overflow: hidden;
+					img {
+						max-width: 32px;
+						transform: scale(1.45);
+
+						--stroke-pos: 0.5px;
+						--stroke-neg: -0.5px;
+						--stroke-color: rgba(0, 0, 0, 0.5);
+						filter: drop-shadow(var(--stroke-pos) 0 0 var(--stroke-color)) 
+						drop-shadow(0 var(--stroke-pos) 0 var(--stroke-color))
+						drop-shadow(var(--stroke-neg) 0 0 var(--stroke-color)) 
+						drop-shadow(0 var(--stroke-neg) 0 var(--stroke-color));
+					}
+				}
+			}
+		}
+	}
 }
