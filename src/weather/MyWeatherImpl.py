@@ -1,3 +1,6 @@
+from datetime import datetime
+from enum import Enum
+from src.Api import MyJSONEncoder
 from src.WeatherImpl import WeatherImpl
 from src.CustomFormatter import CustomFormatter
 from src.SelfResetLazy import SelfResetLazy
@@ -5,10 +8,15 @@ from os.path import abspath, join, exists
 from typing import Any
 from jsons import loads
 from pandas import json_normalize
+from collections.abc import Sequence
 import requests
-import logging
-import os
-import subprocess
+
+
+
+
+class FORECAST_TYPE(Enum):
+    HOURLY = 'hourly'
+    DAILY = 'daily'
 
 
 class MyWeatherImpl(WeatherImpl):
@@ -79,20 +87,47 @@ class MyWeatherImpl(WeatherImpl):
 
         return self.last_temp
     
-    @property
-    def hourly(self) -> list[dict[str, Any]]:
-        lazy = self._lazies[self.primary_loc]
+    def lat_lon(self, location: str=None) -> tuple[float, float]:
+        if location is None:
+            location = self.primary_loc
+        v = self._lazies[location].value
+        return (v['lat'], v['lon'])
+    
+    def forecast_location(self, location: str=None, type: FORECAST_TYPE=FORECAST_TYPE.DAILY) -> list[dict[str, Any]]:
+        if location is None:
+            location = self.primary_loc
+        lazy = self._lazies[location]
 
-        def temp(h):
-            h['weather'] = h['weather'][0]
-            return h
+        def unpack_array(item):
+            if isinstance(item['weather'], Sequence):
+                item['weather'] = item['weather'][0]
+            return item
+        
+        mje = MyJSONEncoder()
+        def convert_timestamps(item):
+            check_keys = ['dt', 'sunrise', 'sunset', 'moonrise', 'moonset']
+            for key in check_keys:
+                if key in item and isinstance(item[key], int):
+                    item[key] = mje.default(datetime.fromtimestamp(item[key]))
+            return item
 
+        
         try:
-            # unpack nested array,
-            hourly = list(map(temp, lazy.value['hourly']))
+            # unpack nested array (if any),
+            fc = list(map(lambda item: unpack_array(convert_timestamps(item.copy())), lazy.value[type.value]))
             # then flatten nested properties
-            temp = json_normalize(hourly)
+            temp = json_normalize(fc)
             return temp.to_dict('records')
         except Exception as e:
             self.logger.error(f'Cannot get hourly weather, exception was: "{str(e)}"')
             return []
+            
+
+
+    @property
+    def hourly(self) -> list[dict[str, Any]]:
+        return self.forecast_location(location=self.primary_loc, type=FORECAST_TYPE.HOURLY)
+    
+    @property
+    def daily(self) -> list[dict[str, Any]]:
+        return self.forecast_location(location=self.primary_loc, type=FORECAST_TYPE.DAILY)
