@@ -62,6 +62,13 @@ div#summary-next-days {
 				border-right: 1px solid #ccc;
 			}
 
+			code {
+				font-family: 'WenQuanYi Micro Hei Mono';
+				font-size: 13px !important;
+				font-weight: 900;
+				letter-spacing: -.15ex;
+			}
+
 			div.day {
 				background-color: #eee;
 				text-align: center;
@@ -71,6 +78,34 @@ div#summary-next-days {
 					text-align: center;
 				}
 			}
+
+			span.symbol {
+				display: inline-block;
+				width: 13px;
+				height: 13px;
+				margin: 0 1ex 0 .5ex;
+				background-size: contain;
+				vertical-align: text-bottom;
+
+				+span {
+					font-size: 12px;
+				}
+
+				/* icons from <a href="https://www.flaticon.com/free-icons/meter" title="meter icons">Meter icons created by Freepik - Flaticon</a> */
+				&.precipitation {
+					background-image: url('/web/assets/umbrella.png');
+				}
+				&.wind {
+					background-image: url('/web/assets/wind-direction.png');
+				}
+				&.humidity {
+					background-image: url('/web/assets/humidity.png');
+				}
+				&.pressure {
+					background-image: url('/web/assets/pressure.png');
+				}
+			}
+
 
 			div.day-night-temps {
 

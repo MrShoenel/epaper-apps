@@ -129,13 +129,21 @@
                     )
                 ));
 
-                $li.append($('<div/>').text(`Prec.: ${(item['rain'] || 0).toFixed(1)} mm, l/m²`));
+                $li.append($('<div/>').append(
+                    $('<span/>').addClass('symbol precipitation')
+                ).append($('<span/>').html(`<code>${(item['rain'] || 0).toFixed(1)}</code> mm (l/m²)`)));
 
-                $li.append($('<div/>').text(`Wind: ${Math.round(item.wind_speed)} (${Math.round(item.wind_gust)}) m/s`));
+                $li.append($('<div/>').append(
+                    $('<span/>').addClass('symbol wind')
+                ).append($('<span/>').html(`<code>${Math.round(item.wind_speed)}</code> (<code>${Math.round(item.wind_gust)}</code> gust) m/s`)));
 
-                $li.append($('<div/>').text(`Humidity: ${Math.round(item.humidity)}%`));
+                $li.append($('<div/>').append(
+                    $('<span/>').addClass('symbol humidity')
+                ).append($('<span/>').html(`<code>${Math.round(item.humidity)}</code>% (humidity)`)));
                 
-                $li.append($('<div/>').text(`Press.: ${(item['pressure'] || 0).toLocaleString(locale, {maximumFractionDigits: 0})} hPa`));
+                $li.append($('<div/>').append(
+                    $('<span/>').addClass('symbol pressure')
+                ).append($('<span/>').html(`<code>${(item['pressure'] || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</code> hPa`)));
 
                 $li.appendTo($summaryNextList);
             });
