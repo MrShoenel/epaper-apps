@@ -20,3 +20,12 @@ class WeatherImpl(ABC):
         also by hour.
         """
         pass
+    
+    @property
+    @abstractmethod
+    def daily(self) -> list[dict[str, Any]]:
+        """
+        Abstract property that returns the weather for the next few days,
+        also by day.
+        """
+        pass
