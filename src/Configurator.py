@@ -38,6 +38,8 @@ from requests.packages.urllib3.util.retry import Retry
 from urllib.parse import urlencode, urlparse
 from pandas import DataFrame
 
+from src.weather.MyWeatherImpl import FORECAST_TYPE, MyWeatherImpl
+
 T = TypeVar('T')
 
 if os.name == 'posix':
@@ -401,12 +403,20 @@ class Configurator:
 
     def setupWeatherYr(self):
         c = self.config['weather-yr']
+        ws: MyWeatherImpl = self.getService(WeatherImpl)
+
 
         def renderYrWeather(location: str):
             return render_template(
                 'weather-yr/yr-svg.html',
                 view_config=self.config['views'][f'weather-yr-{location}'],
-                location=location
+                locale=self.config['general']['locale'],
+                time_now=datetime.now().astimezone(),
+                day_names=list(map(lambda str: str.capitalize(), calendar.day_name)),
+                month_names=list(filter(lambda s: s != '', map(lambda str: str.capitalize(), calendar.month_name))),
+                location=location,
+                forecast_daily=ws.forecast_location(location=location, type=FORECAST_TYPE.DAILY),
+                forecast_latlon=ws.lat_lon(location=location)
             )
 
         for key in c['locations'].keys():
