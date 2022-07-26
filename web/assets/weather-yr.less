@@ -10,7 +10,7 @@ text[class*="axis"] {
 }
 
 div#wrapper {
-	transform: scale(1.023018) translateX(10px) translateY(-40px);
+	transform: translateX(10px) translateY(-45px); // scale(1.023018)
 }
 
 div#overlay, div#summary-next-days {
@@ -44,103 +44,151 @@ div#overlay {
 }
 
 div#summary-next-days {
-	top: 355px;
+	top: 345px;
 	border-top: 1px solid #aaa;
 	border-bottom: none;
+	
 
-	ul {
-		margin: 0;
-		padding: 0;
-		column-gap: 0;
-		list-style-type: none;
+	span.symbol {
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		background-size: contain;
+		position: absolute;
+		top: -4px;
+		left: 4px;
 
-		li {
-			font-size: 13px;
+		/* icons from <a href="https://www.flaticon.com/free-icons/meter" title="meter icons">Meter icons created by Freepik - Flaticon</a> */
+		&.day {
+			background-image: url('/web/assets/event.png');
+		}
+		&.day-and-night {
+			background-image: url('/web/assets/day-and-night.png');
+		}
+		&.weather-station {
+			background-image: url('/web/assets/weather-station.png');
+		}
+		&.summary {
+			background-image: url('/web/assets/summary.png');
+		}
+		&.precipitation {
+			background-image: url('/web/assets/umbrella.png');
+		}
+		&.wind {
+			background-image: url('/web/assets/wind-direction.png');
+		}
+		&.humidity {
+			background-image: url('/web/assets/humidity.png');
+		}
+		&.pressure {
+			background-image: url('/web/assets/pressure.png');
+		}
+	}
+
+
+	table {
+		font-size: 14px;
+		border-collapse: collapse;
+		width: 100%;
+
+		div.one-line {
+			font-size: 11px;
+			overflow: hidden;
+			text-overflow: clip;
+			white-space: nowrap;
+		}
+
+		th, td {
+			margin: 0;
+			padding: 0;
+		}
+
+		td.day {
+			padding-left: 12px;
+		}
+
+		td.fr {
+			line-height: 20px;
+			font-size: 12px;
+			font-weight: 900;
+		}
+
+		td.grey {
 			background-color: #eee;
+		}
 
-			&:not(:last-child) {
-				border-right: 1px solid #ccc;
+		tr {
+			&:first-child {
+				th:not(:first-child), td {
+					//border-top: 1px solid #aaa;
+				}
 			}
-
-			code {
-				font-family: 'WenQuanYi Micro Hei Mono';
-				font-size: 13px !important;
-				font-weight: 900;
-				letter-spacing: -.15ex;
-			}
-
-			div.day {
-				background-color: #eee;
-				text-align: center;
-
-				+div {
-					background-color: #fff;
-					text-align: center;
+			&:nth-child(even) {
+				span.symbol {
+					left: 28px;
 				}
 			}
 
-			span.symbol {
-				display: inline-block;
-				width: 13px;
-				height: 13px;
-				margin: 0 1ex 0 .5ex;
-				background-size: contain;
-				vertical-align: text-bottom;
+			th {
+				text-align: left;
+				&:first-child {
+					position: relative;
+					width: 48px;
 
-				+span {
-					font-size: 12px;
-				}
-
-				/* icons from <a href="https://www.flaticon.com/free-icons/meter" title="meter icons">Meter icons created by Freepik - Flaticon</a> */
-				&.precipitation {
-					background-image: url('/web/assets/umbrella.png');
-				}
-				&.wind {
-					background-image: url('/web/assets/wind-direction.png');
-				}
-				&.humidity {
-					background-image: url('/web/assets/humidity.png');
-				}
-				&.pressure {
-					background-image: url('/web/assets/pressure.png');
-				}
-			}
-
-
-			div.day-night-temps {
-
-				display: grid;
-				grid-template-columns: 35px 1fr;
-				grid-column-gap: 0;
-				grid-row-gap: 0;
-				justify-items: stretch;
-				align-items: stretch;
-				background-color: #fff;
-
-				>div:first-child {
-					padding-left: 2px;
-				}
-				>div:nth-child(2) {
-					padding-top: 3px;
-				}
-
-				span.img {
-					width: 32px;
-					height: 32px;
-					display: inline-block;
-					overflow: hidden;
-					img {
-						max-width: 32px;
-						transform: scale(1.45);
-
-						--stroke-pos: 0.5px;
-						--stroke-neg: -0.5px;
-						--stroke-color: rgba(0, 0, 0, 0.5);
-						filter: drop-shadow(var(--stroke-pos) 0 0 var(--stroke-color)) 
-						drop-shadow(0 var(--stroke-pos) 0 var(--stroke-color))
-						drop-shadow(var(--stroke-neg) 0 0 var(--stroke-color)) 
-						drop-shadow(0 var(--stroke-neg) 0 var(--stroke-color));
+					+th {
+						font-size: 11px;
+						font-weight: 100;
+						padding-left: 1em;
+						padding-right: .5ex;
 					}
+				}
+			}
+		}
+
+		code {
+			font-family: 'WenQuanYi Micro Hei Mono';
+			font-size: 12px !important;
+			font-weight: 900;
+			letter-spacing: -.1ex;
+			margin-right: .25ex;
+
+			+span {
+				font-size: 11px;
+			}
+		}
+
+		div.day-night-temps {
+
+			display: grid;
+			grid-template-columns: 44px 1fr;
+			grid-column-gap: 0;
+			grid-row-gap: 0;
+			justify-items: stretch;
+			align-items: stretch;
+			background-color: #fff;
+
+			p {
+				margin: 0;
+				line-height: 18px;
+			}
+
+			span.img {
+				width: 40px;
+				height: 32px;
+				display: inline-block;
+				overflow: hidden;
+				img {
+					max-width: 40px;
+					max-height: 40px;
+					transform: scale(1.375) translateY(-2px);
+
+					--stroke-pos: 0.5px;
+					--stroke-neg: -0.5px;
+					--stroke-color: rgba(0, 0, 0, 0.5);
+					filter: drop-shadow(var(--stroke-pos) 0 0 var(--stroke-color)) 
+					drop-shadow(0 var(--stroke-pos) 0 var(--stroke-color))
+					drop-shadow(var(--stroke-neg) 0 0 var(--stroke-color)) 
+					drop-shadow(0 var(--stroke-neg) 0 var(--stroke-color));
 				}
 			}
 		}

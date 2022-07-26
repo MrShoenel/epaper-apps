@@ -31,7 +31,71 @@
             <h1>Weather: <span style="font-weight: 900; font-size: 110%;">{{ location }}</span> <span class="lat-lon">[{{ forecast_latlon[0]|tojson|safe }}</span>,<span class="lat-lon">{{ forecast_latlon[1]|tojson|safe }}]</span></h1>
         </div>
         <div id="summary-next-days">
-            <ul></ul>
+            <table>
+                <tr>
+                    <th>
+                        <span class="symbol day"></span>
+                    </th>
+                    <th>Day</th>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="symbol summary"></span>
+                    </th>
+                    <th>
+                        Summary
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="symbol weather-station"></span>
+                    </th>
+                    <th>
+                        Overview,
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="symbol day-and-night"></span>
+                    </th>
+                    <th>
+                        °C day/night
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="symbol precipitation"></span>
+                    </th>
+                    <th>
+                        Precipitation
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="symbol wind"></span>
+                    </th>
+                    <th>
+                        Wind, Gust
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="symbol humidity"></span>
+                    </th>
+                    <th>
+                        Humidity
+                    </th>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="symbol pressure"></span>
+                    </th>
+                    <th>
+                        Pressure
+                    </th>
+                </tr>
+            </table>
+            <!-- <ul></ul> -->
         </div>
     </div>
     <script type="text/javascript">
@@ -97,65 +161,64 @@
 
 
         // Let's render the summary forecast for the next days.
-        const $summaryNextList = $('div#summary-next-days ul').css('column-count', Math.min(7, forecast_daily.length - 1));
         const renderSummaryNextDays = async() => {
+            // For each day, we'll have to append a <td> to each <tr> (one per feature)
+            $trs = $('tbody tr');
+
+            //const toCode = (a, b) => $.merge($('<code/>').text(a), document.createTextNode(b));
+            const toCode = (a, b) => `<code>${a}</code><span>${b}</span>`;
+            
             const renderSummary = item => new Promise((res, rej) => {
                 // https://openweathermap.org/img/wn/04d@4x.png
                 const $img = $('<img/>');
                 $img[0].onload = e => res();
                 $img[0].onerror = e => rej();
                 $img.attr('src', `https://openweathermap.org/img/wn/${item['weather.icon']}@4x.png`);
-                //$summaryNextList.append($('<li/>').text(Math.round(item['temp.day'])).append($img));
 
-                $li = $('<li/>');
 
-                $li.append($('<div/>').addClass('day').text(
-                    `${day_names[item['dt.iso_weekday'] - 1].substr(0, 3)}, ${item['dt.day']}.${item['dt.month']}.`
-                ));
+                // The day:
+                $($trs[0]).append($('<td/>').addClass('day grey fr').text(`${day_names[item['dt.iso_weekday'] - 1].substr(0, 3)}, ${item['dt.day']}.${item['dt.month']}.`));
 
+                // The summary:
                 /** @type string */
                 const desc = item['weather.description'];
-                $li.append($('<div/>').text(desc.substr(0, 1).toUpperCase() + desc.substr(1)));
-                
-                $li.append($('<div/>').addClass('day-night-temps').append(
-                    $('<div/>').append($('<span/>').addClass('img').append($img))
-                ).append(
-                    $('<div/>').append(
-                        $('<span/>').text(`${Math.round(item['temp.day'])}°C (day)`)
-                    ).append(
-                        $('<br/>')
-                    ).append(
-                        $('<span/>').text(`${Math.round(item['temp.night'])}°C (night)`)
-                    )
+                $($trs[1]).append($('<td/>').addClass('day').append($('<div/>').addClass('one-line').text(desc.substr(0, 1).toUpperCase() + desc.substr(1))));
+
+                // Now we have a td with rowspan=2
+                $($trs[2]).append($('<td/>').addClass('day').attr('rowspan', '2').append(
+                    $('<div/>').addClass('day-night-temps').append($('<div/>')
+                        .append($('<span/>').addClass('img').append($img))
+                    ).append($('<div/>')
+                        .append($('<p/>').append(toCode(Math.round(item['temp.day']), '°C'))
+                        .append($('<p/>').append(toCode(Math.round(item['temp.night']), '°C'))
+                    )))
                 ));
 
-                $li.append($('<div/>').append(
-                    $('<span/>').addClass('symbol precipitation')
-                ).append($('<span/>').html(`<code>${(item['rain'] || 0).toFixed(1)}</code> mm (l/m²)`)));
+                // Skip one <tr>; precipitation
+                $($trs[4]).append($('<td/>').addClass('day grey').append($('<div/>').html(toCode((item['rain'] || 0).toFixed(1), 'mm, l/m²'))));
 
-                $li.append($('<div/>').append(
-                    $('<span/>').addClass('symbol wind')
-                ).append($('<span/>').html(`<code>${Math.round(item.wind_speed)}</code> (<code>${Math.round(item.wind_gust)}</code> gust) m/s`)));
-
-                $li.append($('<div/>').append(
-                    $('<span/>').addClass('symbol humidity')
-                ).append($('<span/>').html(`<code>${Math.round(item.humidity)}</code>% (humidity)`)));
+                // Wind
+                $($trs[5]).append($('<td/>').addClass('day grey')
+                    .html(
+                        toCode(Math.round(item.wind_speed), 'm/s, ') +
+                        toCode(Math.round(item.wind_gust), 'm/s')
+                    ));
                 
-                $li.append($('<div/>').append(
-                    $('<span/>').addClass('symbol pressure')
-                ).append($('<span/>').html(`<code>${(item['pressure'] || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</code> hPa`)));
+                // Humidity
+                $($trs[6]).append($('<td/>').addClass('day grey').append(toCode(Math.round(item.humidity), '%')));
 
-                $li.appendTo($summaryNextList);
+                // Pressure
+                $($trs[7]).append($('<td/>').addClass('day grey').append(toCode((item['pressure'] || 0).toLocaleString('en-US', {maximumFractionDigits: 0}), 'hPa')));
             });
 
 
             const promises = forecast_daily.slice(1, 8).map(item => {
                 return renderSummary(item);
             });
-            
+
             return Promise.all(promises);
         };
-        
+
         await renderSummaryNextDays();
 
 
