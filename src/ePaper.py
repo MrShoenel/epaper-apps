@@ -4,7 +4,7 @@ from src.CustomFormatter import CustomFormatter
 from threading import Timer
 
 if os.name == 'posix':
-    from src.epd7in5b_V2 import EPD, epdconfig
+    from src.epd7in5b_V2 import EPD
 
 
 class ePaper():
@@ -32,7 +32,7 @@ class ePaper():
             self.logger.debug('Forcefully interrupting the e-paper.')
             had_ex = False
             try:
-                epdconfig.module_exit()
+                self.epaper.epdconfig.module_exit()
             except Exception as e:
                 self.logger.warning('Forceful interruption of e-paper incurred an exception: ' + str(e))
                 had_ex = True
