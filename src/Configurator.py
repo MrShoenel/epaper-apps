@@ -192,10 +192,10 @@ class Configurator:
                 if type(args['duration']) is float:
                     duration = args['duration']
                 if args['activity'] == 'burn':
-                    self.logger.debug(f'Triggering action "burn" for LED "{led.name}"@{led.pin} for a duration of {format(duration, ".2f")} seconds.')
+                    self.logger.debug(f'Triggering action "burn" for LED "{led.name}"@pin={led.pin} for a duration of {format(duration, ".2f")} seconds.')
                     self._tpe.submit(lambda: self.ctrl.burnLed(led=led, burn_for=duration))
                 elif args['activity'] == 'blink':
-                    self.logger.debug(f'Triggering action "blink" for LED "{led.name}"@{led.pin} for a duration of {format(duration, ".2f")} seconds with a frequency of {args["freq"]} Hz.')
+                    self.logger.debug(f'Triggering action "blink" for LED "{led.name}"@pin={led.pin} for a duration of {format(duration, ".2f")} seconds with a frequency of {args["freq"]} Hz.')
                     self._tpe.submit(lambda: self.ctrl.blinkLed(led=led, duration=duration, freq=args['freq']))
 
     def initStateMachines(self):
