@@ -85,6 +85,9 @@ class Configurator:
         self.data_folder = config['general']['data_folder'][os.name]
         pathlib.Path(self.data_folder).mkdir(parents=True, exist_ok=True)
         CustomFormatter.setLevel(level=getattr(logging, config['general']['log_level'], None))
+        CustomFormatter.setLogFile(
+            file=abspath(join(self.data_folder, config['general']['log_file'])),
+            maxLines=config['general']['log_file_lines'])
 
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
         self.logger.debug(f'Read configuration: {dumps(config)}')
