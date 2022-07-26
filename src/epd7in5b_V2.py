@@ -99,57 +99,58 @@ class RaspberryPi:
         self.GPIO.cleanup([self.RST_PIN, self.DC_PIN, self.CS_PIN, self.BUSY_PIN])
 
 
-epdconfig = RaspberryPi()
+
 
 class EPD:
     def __init__(self):
-        self.reset_pin = epdconfig.RST_PIN
-        self.dc_pin = epdconfig.DC_PIN
-        self.busy_pin = epdconfig.BUSY_PIN
-        self.cs_pin = epdconfig.CS_PIN
+        self.epdconfig = RaspberryPi()
+        self.reset_pin = self.epdconfig.RST_PIN
+        self.dc_pin = self.epdconfig.DC_PIN
+        self.busy_pin = self.epdconfig.BUSY_PIN
+        self.cs_pin = self.epdconfig.CS_PIN
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
     # Hardware reset
     def reset(self):
-        epdconfig.digital_write(self.reset_pin, 1)
-        epdconfig.delay_ms(200) 
-        epdconfig.digital_write(self.reset_pin, 0)
-        epdconfig.delay_ms(4)
-        epdconfig.digital_write(self.reset_pin, 1)
-        epdconfig.delay_ms(200)   
+        self.epdconfig.digital_write(self.reset_pin, 1)
+        self.epdconfig.delay_ms(200) 
+        self.epdconfig.digital_write(self.reset_pin, 0)
+        self.epdconfig.delay_ms(4)
+        self.epdconfig.digital_write(self.reset_pin, 1)
+        self.epdconfig.delay_ms(200)   
 
     def send_command(self, command):
-        epdconfig.digital_write(self.dc_pin, 0)
-        epdconfig.digital_write(self.cs_pin, 0)
-        epdconfig.spi_writebyte([command])
-        epdconfig.digital_write(self.cs_pin, 1)
+        self.epdconfig.digital_write(self.dc_pin, 0)
+        self.epdconfig.digital_write(self.cs_pin, 0)
+        self.epdconfig.spi_writebyte([command])
+        self.epdconfig.digital_write(self.cs_pin, 1)
 
     def send_data(self, data):
-        epdconfig.digital_write(self.dc_pin, 1)
-        epdconfig.digital_write(self.cs_pin, 0)
-        epdconfig.spi_writebyte([data])
-        epdconfig.digital_write(self.cs_pin, 1)
+        self.epdconfig.digital_write(self.dc_pin, 1)
+        self.epdconfig.digital_write(self.cs_pin, 0)
+        self.epdconfig.spi_writebyte([data])
+        self.epdconfig.digital_write(self.cs_pin, 1)
     
     def send_data2(self, data): #faster
-        epdconfig.digital_write(self.dc_pin, 1)
-        epdconfig.digital_write(self.cs_pin, 0)
-        epdconfig.SPI.writebytes2(data)
-        epdconfig.digital_write(self.cs_pin, 1)
+        self.epdconfig.digital_write(self.dc_pin, 1)
+        self.epdconfig.digital_write(self.cs_pin, 0)
+        self.epdconfig.SPI.writebytes2(data)
+        self.epdconfig.digital_write(self.cs_pin, 1)
 
     def ReadBusy(self):
         self.logger.debug("e-Paper busy")
         self.send_command(0x71)
-        busy = epdconfig.digital_read(self.busy_pin)
+        busy = self.epdconfig.digital_read(self.busy_pin)
         while(busy == 0):
             self.send_command(0x71)
-            busy = epdconfig.digital_read(self.busy_pin)
-        epdconfig.delay_ms(200)
+            busy = self.epdconfig.digital_read(self.busy_pin)
+        self.epdconfig.delay_ms(200)
         self.logger.debug("e-Paper busy release")
         
     def init(self):
-        if (epdconfig.module_init() != 0):
+        if (self.epdconfig.module_init() != 0):
             return -1
             
         self.reset()
@@ -167,7 +168,7 @@ class EPD:
         self.send_data(0x3f);		#VDL=-15V
 
         self.send_command(0x04); #POWER ON
-        epdconfig.delay_ms(100);
+        self.epdconfig.delay_ms(100);
         self.ReadBusy();
 
         self.send_command(0X00);			#PANNEL SETTING
@@ -228,7 +229,7 @@ class EPD:
         self.send_data2(imagered)
         
         self.send_command(0x12)
-        epdconfig.delay_ms(100)
+        self.epdconfig.delay_ms(100)
         self.ReadBusy()
         
     def Clear(self):
@@ -241,7 +242,7 @@ class EPD:
         self.send_data2(buf)
                 
         self.send_command(0x12)
-        epdconfig.delay_ms(100)
+        self.epdconfig.delay_ms(100)
         self.ReadBusy()
 
     def sleep(self):
@@ -251,7 +252,5 @@ class EPD:
         self.send_command(0x07) # DEEP_SLEEP
         self.send_data(0XA5)
         
-        epdconfig.delay_ms(2000)
-        epdconfig.module_exit()
-### END OF FILE ###
-
+        self.epdconfig.delay_ms(2000)
+        self.epdconfig.module_exit()
