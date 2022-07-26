@@ -33,9 +33,12 @@ import os
 import logging
 import sys
 import time
-import spidev
-import RPi.GPIO
 from src.CustomFormatter import CustomFormatter
+
+
+if os.name == 'posix':
+    import spidev
+    import RPi.GPIO
 
 
 
