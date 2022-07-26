@@ -48,7 +48,6 @@ if os.name == 'posix':
 EPD_WIDTH       = 800
 EPD_HEIGHT      = 480
 
-logger = CustomFormatter.getLoggerFor(__name__)
 
 class RaspberryPi:
     # Pin definition
@@ -60,6 +59,7 @@ class RaspberryPi:
     def __init__(self):
         self.GPIO = RPi.GPIO
         self.SPI = spidev.SpiDev()
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
     def digital_write(self, pin, value):
         self.GPIO.output(pin, value)
@@ -92,10 +92,10 @@ class RaspberryPi:
         return 0
 
     def module_exit(self):
-        logger.debug("spi end")
+        self.logger.debug("spi end")
         self.SPI.close()
 
-        logger.debug("close 5V, Module enters 0 power consumption ...")
+        self.logger.debug("close 5V, Module enters 0 power consumption ...")
         self.GPIO.output(self.RST_PIN, 0)
         self.GPIO.output(self.DC_PIN, 0)
 
@@ -112,6 +112,7 @@ class EPD:
         self.cs_pin = epdconfig.CS_PIN
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
+        self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
     # Hardware reset
     def reset(self):
@@ -141,14 +142,14 @@ class EPD:
         epdconfig.digital_write(self.cs_pin, 1)
 
     def ReadBusy(self):
-        logger.debug("e-Paper busy")
+        self.logger.debug("e-Paper busy")
         self.send_command(0x71)
         busy = epdconfig.digital_read(self.busy_pin)
         while(busy == 0):
             self.send_command(0x71)
             busy = epdconfig.digital_read(self.busy_pin)
         epdconfig.delay_ms(200)
-        logger.debug("e-Paper busy release")
+        self.logger.debug("e-Paper busy release")
         
     def init(self):
         if (epdconfig.module_init() != 0):
@@ -208,7 +209,7 @@ class EPD:
             # image has correct dimensions, but needs to be rotated
             img = img.rotate(90, expand=True).convert('1')
         else:
-            logger.warning("Wrong image dimensions: must be " + str(self.width) + "x" + str(self.height))
+            self.logger.warning("Wrong image dimensions: must be " + str(self.width) + "x" + str(self.height))
             # return a blank buffer
             return [0x00] * (int(self.width/8) * self.height)
 
