@@ -45,6 +45,16 @@ class ePaperStateMachine(StateManager):
         # This happens outside of this application, and we rely on the images
         # being present at this point.
         # If we also use an LCD, we may also show some info there.
+
+        # We gotta check if 'state_to' is an alias of another state. If so,
+        # then we use the aliased state's name.
+        aliases =  self._stateConfig['aliases']
+        for alias in aliases:
+            if alias['alias'] == state_to:
+                self.logger.debug(f'Found alias: {alias}')
+                state_to = alias['original']
+                break
+
         data_folder = self._config['general']['data_folder'][os.name]
 
         # kwargs will be the arguments from the transition.
