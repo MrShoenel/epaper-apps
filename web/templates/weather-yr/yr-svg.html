@@ -154,7 +154,7 @@
 
         // Replace the labels for the next days in the SVG:
         $('text.day-label').each((idx, elem) => {
-            const d = new Date(time_now.ts * 1e3 + (idx + 1) * 86400000)
+            const d = new Date(time_now.ts * 1e3 + idx * 86400000)
             , isoDay = (d.getDay() + 6) % 7 + 1;
             $(elem).text(`${day_names[isoDay - 1]}, ${d.getDate()}. ${month_names[d.getMonth()]}`);
         });
