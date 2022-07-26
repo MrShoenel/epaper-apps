@@ -32,8 +32,19 @@ class ePaperStateMachine(StateManager):
     @property
     def busy(self) -> bool:
         return self._busy
+    
+    def aliasToOriginal(self, state: str) -> str:
+        # We gotta check if 'state_to' is an alias of another state. If so,
+        # then we use the aliased state's name.
+        aliases =  self._stateConfig['aliases']
+        for alias in aliases:
+            if alias['alias'] == state:
+                self.logger.debug(f'Found alias: {alias}')
+                return alias['original']
+        return state
 
     def lastDuration(self, state_to: str, with_clear: bool) -> float:
+        state_to = self.aliasToOriginal(state=state_to)
         q = self._last_durations[f'{state_to}_{with_clear}']
         if len(q) == 0:
             return 30.0 # The default duration if we don't know so far
@@ -45,15 +56,7 @@ class ePaperStateMachine(StateManager):
         # This happens outside of this application, and we rely on the images
         # being present at this point.
         # If we also use an LCD, we may also show some info there.
-
-        # We gotta check if 'state_to' is an alias of another state. If so,
-        # then we use the aliased state's name.
-        aliases =  self._stateConfig['aliases']
-        for alias in aliases:
-            if alias['alias'] == state_to:
-                self.logger.debug(f'Found alias: {alias}')
-                state_to = alias['original']
-                break
+        state_to = self.aliasToOriginal(state=state_to)
 
         data_folder = self._config['general']['data_folder'][os.name]
 
