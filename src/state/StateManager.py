@@ -58,7 +58,7 @@ class StateManager(ABC, Events):
             # (type=external) is called from outside, with the target state's name.
             timer_trans = list(filter(lambda t: t['type']=='timer' and t['from']==self.state, self._stateConfig['transitions']))
             if len(timer_trans) > 1:
-                raise Exception('More than one timer-transition is defined for state "{state_to}".')
+                raise Exception(f'More than one timer-transition is defined for state "{state_to}".')
             if len(timer_trans) == 1:
                 tt = timer_trans[0]
                 tt_timeout = float(tt['args']['timeout'])
