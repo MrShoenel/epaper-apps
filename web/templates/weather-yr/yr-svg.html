@@ -153,7 +153,7 @@
             for (let offset = 0; offset < 2; offset++) {
                 let d = new Date(time_now.ts * 1e3 + (idx + offset) * 86400000)
                 , isoDay = (d.getDay() + 6) % 7 + 1,
-                elemDay = parseInt($(elem).text().trim().split(/\s+/)[1], 10);
+                elemDay = parseInt($(elem).text().replace(/[^\d]/g, ''), 10);
 
                 if (d.getDate() !== elemDay) {
                     continue
