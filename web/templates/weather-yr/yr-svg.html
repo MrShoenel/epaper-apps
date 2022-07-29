@@ -136,10 +136,6 @@
             $('<span/>').addClass('mono').css('font-family', 'WenQuanYi Micro Hei Mono').text('bar')
         ).appendTo('body');
 
-        await waitForFont('#font-dummy .reg');
-        await waitForFont('#font-dummy .mono', true);
-        $fontDummy.remove();
-
 
         const $overlay = $('div#overlay');
 
@@ -250,6 +246,9 @@
 
         renderLastUpdated();
 
+        await waitForFont('#font-dummy .reg');
+        await waitForFont('#font-dummy .mono', true);
+        $fontDummy.remove();
 
 
         await timeout(500);
