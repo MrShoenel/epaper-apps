@@ -107,7 +107,7 @@ class MyWeatherImpl(WeatherImpl):
         def convert_timestamps(item):
             check_keys = ['dt', 'sunrise', 'sunset', 'moonrise', 'moonset']
             for key in check_keys:
-                if key in item and isinstance(item[key], int):
+                if key in item and isinstance(item[key], int) and item[key] > 99999:
                     item[key] = mje.default(datetime.fromtimestamp(item[key]))
             return item
 
