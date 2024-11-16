@@ -54,7 +54,7 @@ class Datetime(LcdApp):
                 if isnan(val):
                     line += f' ?{chr(223)}C' # display as ?°C
                 else:
-                    temp = float(round(val.currentTemp, 1))
+                    temp = float(round(val, 1))
                     format_str = '.0f' if temp.is_integer() else '.1f'
                     # Do this to avoid "-0°C", i.e., 0 is positive
                     sign_str = '' if temp >= 0 else '-'

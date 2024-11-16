@@ -1,14 +1,10 @@
 from datetime import datetime, timedelta
-from enum import Enum
-from src.Api import MyJSONEncoder
 from src.WeatherImpl import WeatherImpl
 from src.CustomFormatter import CustomFormatter
 from src.SelfResetLazy import SelfResetLazy
 from os.path import abspath, join, exists
 from typing import Any
 from jsons import loads
-from pandas import json_normalize
-from collections.abc import Sequence
 from concurrent.futures import Future
 import requests
 
@@ -66,10 +62,9 @@ class OpenMeteoWeatherImpl(WeatherImpl):
         """Do not block in this method."""
         lazy = self._lazies[self.primary_loc]
 
-        def set_current_temp(future: Future[dict]) -> None:
+        def set_current_temp(res: dict) -> float:
             # The response has an array of hourly forecasts and we got to find the index first.
             # If the current minute is > 30, we take the forecast from the next hour.
-            res = future.result()
             dt = datetime.now()
             if dt.minute > 30:
                 dt += timedelta(hours=1.0)
@@ -78,10 +73,13 @@ class OpenMeteoWeatherImpl(WeatherImpl):
                 idx: int = res['hourly']['time'].index(dt.strftime('%Y-%m-%dT%H:00'))
                 self.last_temp = res['hourly']['temperature_2m'][idx]
             except:
-                pass
+                self.last_temp = float('nan')
+            return self.last_temp
         
-        if not lazy.hasValueVolatile:
-            lazy.valueFuture.add_done_callback(set_current_temp)
+        if lazy.hasValueVolatile:
+            set_current_temp(lazy.value)
+        else:
+            lazy.valueFuture.add_done_callback(lambda future: set_current_temp(future.result()))
         
         return self.last_temp
 
@@ -91,12 +89,13 @@ class OpenMeteoWeatherImpl(WeatherImpl):
         """Do not block in this method."""
         lazy = self._lazies[self.primary_loc]
         
-        def set_hourly(future: Future[dict]) -> None:
-            res = future.result()
+        def set_hourly(res: dict) -> None:
             self.last_hourly = res['hourly']['time']
-
-        if not lazy.hasValueVolatile:
-            lazy.valueFuture.add_done_callback(set_hourly)
+        
+        if lazy.hasValueVolatile:
+            set_hourly(lazy.value)
+        else:
+            lazy.valueFuture.add_done_callback(lambda future: set_hourly(future.result()))
         
         return self.last_hourly
         
