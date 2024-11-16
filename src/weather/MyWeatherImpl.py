@@ -39,7 +39,7 @@ class MyWeatherImpl(WeatherImpl):
         self.primary_loc = list(self.conf['locations'].keys())[0]
         self.logger.debug(f'The primary location for weather is "{self.primary_loc}"')
 
-        self.last_temp: float = 0.0
+        self.last_temp: float = float('nan')
     
     def getWeather(self, key: str) -> dict:
         c = self.conf['locations'][key]
