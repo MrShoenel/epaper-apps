@@ -9,6 +9,7 @@ from src.CustomFormatter import CustomFormatter
 from src.SelfResetLazy import SelfResetLazy
 from src.WeatherImpl import WeatherImpl
 from typing import Callable
+from math import isnan
 
 
 def pad(s: str):
@@ -49,11 +50,15 @@ class Datetime(LcdApp):
             line = f'{dt.hour}:{pad(dt.minute)}:{pad(dt.second)}'
 
             if self._showTemp:
-                temp = float(round(self.lazy_weather.value.currentTemp, 1))
-                format_str = '.0f' if temp.is_integer() else '.1f'
-                # Do this to avoid "-0°C", i.e., 0 is positive
-                sign_str = '' if temp >= 0 else '-'
-                line += f' {sign_str}{format(abs(temp), format_str)}{chr(223)}C'
+                val = self.lazy_weather.value.currentTemp
+                if isnan(val):
+                    line += f' ?{chr(223)}C' # display as ?°C
+                else:
+                    temp = float(round(val.currentTemp, 1))
+                    format_str = '.0f' if temp.is_integer() else '.1f'
+                    # Do this to avoid "-0°C", i.e., 0 is positive
+                    sign_str = '' if temp >= 0 else '-'
+                    line += f' {sign_str}{format(abs(temp), format_str)}{chr(223)}C'
             return line
         
         def dateFn():
