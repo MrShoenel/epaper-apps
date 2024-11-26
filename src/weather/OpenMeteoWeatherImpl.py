@@ -5,7 +5,7 @@ from src.SelfResetLazy import SelfResetLazy
 from os.path import abspath, join, exists
 from typing import Any
 from jsons import loads
-from concurrent.futures import Future
+from src.weather.MyWeatherImpl import FORECAST_TYPE
 import requests
 
 class OpenMeteoWeatherImpl(WeatherImpl):
@@ -107,5 +107,10 @@ class OpenMeteoWeatherImpl(WeatherImpl):
         also by day.
         """
         raise NotImplementedError()
-
+    
+    def lat_lon(self, location: str=None) -> tuple[float, float]:
+        return (0.0, 0.0)
+    
+    def forecast_location(self, location: str=None, type: FORECAST_TYPE=FORECAST_TYPE.DAILY) -> list[dict[str, Any]]:
+        return []
     
