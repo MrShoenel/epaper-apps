@@ -236,7 +236,7 @@
             // let latestHour = Math.max(time_now.hour, temp.sort((a, b) => b.end.ts - a.end.ts)[0].end.hour);
             const lastEvent = events_of_the_day.sort((a, b) => b.end.ts - a.end.ts)[0];
             let latestHour = lastEvent.end.hour;
-            if (lastEvent.end.day > time.day) {
+            if (lastEvent.end.day > time_now.day) {
                 latestHour = 23;
             }
 
