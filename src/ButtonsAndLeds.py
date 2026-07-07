@@ -120,7 +120,7 @@ class ButtonsAndLeds(Events):
         self.logger.debug(f'Adding button on GPIO {pin}.')
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         # Argument 'bouncetime' does not work reliably in the following set up call.
-        GPIO.add_event_detect(gpio=pin, edge=GPIO.RISING, callback=lambda _: self._triggerButton(btn))
+        GPIO.add_event_detect(channel=pin, edge=GPIO.RISING, callback=lambda _: self._triggerButton(btn))
         self._buttons.add(btn)
 
         return btn
