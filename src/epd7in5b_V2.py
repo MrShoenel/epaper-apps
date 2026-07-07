@@ -48,10 +48,10 @@ EPD_HEIGHT      = 480
 
 class RaspberryPi:
     # Pin definition
-    RST_PIN         = 17
-    DC_PIN          = 25
-    CS_PIN          = 8
-    BUSY_PIN        = 24
+    RST_PIN  = 17
+    DC_PIN   = 25
+    CS_PIN   = 8
+    BUSY_PIN = 24
 
     def __init__(self):
         self.GPIO = RPi.GPIO
@@ -59,6 +59,11 @@ class RaspberryPi:
         self.logger = CustomFormatter.getLoggerFor(self.__class__.__name__)
 
     def digital_write(self, pin, value):
+        # GPIO 8/7 are hardware SPI chip-select lines.
+        # On newer Raspberry Pi OS they cannot be driven as normal GPIO
+        # while SPI owns them. Let spidev handle CS instead.
+        if pin == self.CS_PIN and pin in (7, 8):
+            return
         self.GPIO.output(pin, value)
 
     def digital_read(self, pin):
@@ -74,15 +79,17 @@ class RaspberryPi:
         self.SPI.writebytes2(data)
 
     def module_init(self):
-        # This is done by the configurator now!
-        # self.GPIO.setmode(self.GPIO.BCM)
-        # self.GPIO.setwarnings(False)
+        # Setting mode is handled by the Configurator!
         self.GPIO.setup(self.RST_PIN, self.GPIO.OUT)
         self.GPIO.setup(self.DC_PIN, self.GPIO.OUT)
-        self.GPIO.setup(self.CS_PIN, self.GPIO.OUT)
+
+        # Do not allocate hardware SPI CS pins as normal GPIO
+        if self.CS_PIN not in (7, 8):
+            self.GPIO.setup(self.CS_PIN, self.GPIO.OUT)
+
         self.GPIO.setup(self.BUSY_PIN, self.GPIO.IN)
 
-        # SPI device, bus = 0, device = 0
+        # SPI device, bus = 0, device = 0 for GPIO 8 / CE0
         self.SPI.open(0, 0)
         self.SPI.max_speed_hz = 4000000
         self.SPI.mode = 0b00
@@ -91,13 +98,14 @@ class RaspberryPi:
     def module_exit(self):
         self.logger.debug("spi end")
         self.SPI.close()
-
         self.logger.debug("close 5V, Module enters 0 power consumption ...")
         self.GPIO.output(self.RST_PIN, 0)
         self.GPIO.output(self.DC_PIN, 0)
 
-        self.GPIO.cleanup([self.RST_PIN, self.DC_PIN, self.CS_PIN, self.BUSY_PIN])
-
+        cleanup_pins = [self.RST_PIN, self.DC_PIN, self.BUSY_PIN]
+        if self.CS_PIN not in (7, 8):
+            cleanup_pins.append(self.CS_PIN)
+        self.GPIO.cleanup(cleanup_pins)
 
 
 
